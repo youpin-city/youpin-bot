@@ -63,7 +63,7 @@ app.post('/webhook/', function(req, res) {
   console.log(req.body);
 
   let data = req.body;
-  if (dataobject == 'page') {
+  if (data.object == 'page') {
     data.entry.forEach(function(pageEntry) {
       const pageID = pageEntry.id;
       const timeOfEvent = pageEntry.time;

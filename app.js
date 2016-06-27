@@ -26,10 +26,12 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 const app = express();
 
 app.set('port', (process.env.PORT || 5000));
+// Must be called before bodyParser
+app.use(xhub({ algorithm: 'sha1', secret: process.env.APP_SECRET }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use('/static', express.static('public'));
-app.use(xhub({ algorithm: 'sha1', secret: process.env.APP_SECRET }));
+
 
 // Index route
 app.get('/', function (req, res) {

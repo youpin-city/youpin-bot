@@ -49,7 +49,7 @@ app.get('/webhook/', function (req, res) {
 app.post('/webhook/', function(req, res) {
   // Verify signature
   if (req.isXHub) {
-    if (req.isXHubValid()) {\
+    if (req.isXHubValid()) {
       res.send('Verified!\n');
     }
   }

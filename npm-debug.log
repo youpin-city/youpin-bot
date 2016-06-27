@@ -1,0 +1,78 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node',
+1 verbose cli   '/usr/local/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   'ป้',
+1 verbose cli   'xhub',
+1 verbose cli   '--save' ]
+2 info using npm@2.15.5
+3 info using node@v4.4.6
+4 verbose install initial load of /Users/virot/Documents/Experimental/youpin/package.json
+5 warn package.json youpin@1.0.0 No description
+6 warn package.json youpin@1.0.0 No repository field.
+7 warn package.json youpin@1.0.0 No README data
+8 verbose installManyTop reading scoped package data from /Users/virot/Documents/Experimental/youpin/node_modules/body-parser/package.json
+9 verbose installManyTop reading scoped package data from /Users/virot/Documents/Experimental/youpin/node_modules/config/package.json
+10 verbose installManyTop reading scoped package data from /Users/virot/Documents/Experimental/youpin/node_modules/express/package.json
+11 verbose installManyTop reading scoped package data from /Users/virot/Documents/Experimental/youpin/node_modules/request/package.json
+12 verbose readDependencies loading dependencies from /Users/virot/Documents/Experimental/youpin/package.json
+13 silly cache add args [ 'ป้', null ]
+14 verbose cache add spec ป้
+15 silly cache add args [ 'xhub', null ]
+16 verbose cache add spec xhub
+17 silly cache add parsed spec Result {
+17 silly cache add   raw: 'ป้',
+17 silly cache add   scope: null,
+17 silly cache add   name: null,
+17 silly cache add   rawSpec: 'ป้',
+17 silly cache add   spec: '/Users/virot/Documents/Experimental/youpin/ป้',
+17 silly cache add   type: 'local' }
+18 silly cache add parsed spec Result {
+18 silly cache add   raw: 'xhub',
+18 silly cache add   scope: null,
+18 silly cache add   name: 'xhub',
+18 silly cache add   rawSpec: '',
+18 silly cache add   spec: 'latest',
+18 silly cache add   type: 'tag' }
+19 silly addNamed xhub@latest
+20 verbose addNamed "latest" is being treated as a dist-tag for xhub
+21 info addNameTag [ 'xhub', 'latest' ]
+22 silly mapToRegistry name xhub
+23 silly mapToRegistry using default registry
+24 silly mapToRegistry registry https://registry.npmjs.org/
+25 silly mapToRegistry data Result {
+25 silly mapToRegistry   raw: 'xhub',
+25 silly mapToRegistry   scope: null,
+25 silly mapToRegistry   name: 'xhub',
+25 silly mapToRegistry   rawSpec: '',
+25 silly mapToRegistry   spec: 'latest',
+25 silly mapToRegistry   type: 'tag' }
+26 silly mapToRegistry uri https://registry.npmjs.org/xhub
+27 verbose addNameTag registry:https://registry.npmjs.org/xhub not in flight; fetching
+28 error addLocal Could not install /Users/virot/Documents/Experimental/youpin/ป้
+29 verbose request uri https://registry.npmjs.org/xhub
+30 verbose request no auth needed
+31 info attempt registry request try #1 at 11:13:11 PM
+32 verbose request id 74365a2cd85f333a
+33 http request GET https://registry.npmjs.org/xhub
+34 info retry will retry, error on last attempt: TypeError: The header content contains invalid characters
+35 info attempt registry request try #2 at 11:13:21 PM
+36 http request GET https://registry.npmjs.org/xhub
+37 info retry will retry, error on last attempt: TypeError: The header content contains invalid characters
+38 info attempt registry request try #3 at 11:14:21 PM
+39 http request GET https://registry.npmjs.org/xhub
+40 verbose stack Error: ENOENT: no such file or directory, open '/Users/virot/Documents/Experimental/youpin/ป้'
+40 verbose stack     at Error (native)
+41 verbose cwd /Users/virot/Documents/Experimental/youpin
+42 error Darwin 10.8.0
+43 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "install" "ป้" "xhub" "--save"
+44 error node v4.4.6
+45 error npm  v2.15.5
+46 error path /Users/virot/Documents/Experimental/youpin/ป้
+47 error code ENOENT
+48 error errno -2
+49 error syscall open
+50 error enoent ENOENT: no such file or directory, open '/Users/virot/Documents/Experimental/youpin/ป้'
+50 error enoent This is most likely not a problem with npm itself
+50 error enoent and is related to npm not being able to find a file.
+51 verbose exit [ -2, true ]

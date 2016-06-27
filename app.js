@@ -47,13 +47,14 @@ app.get('/webhook/', function (req, res) {
 
 // Handle messages
 app.post('/webhook/', function(req, res) {
+  console.log(req);
+
   // Verify signature
   if (req.isXHub) {
     if (req.isXHubValid()) {
       res.send('Verified!\n');
     }
-  }
-  else {
+  } else {
     res.send('Failed to verify!\n');
     res.sendStatus(401);
     return;
@@ -80,7 +81,7 @@ app.post('/webhook/', function(req, res) {
   }
 
   res.sendStatus(200);
-})
+});
 
 function receivedMessage(event) {
   const senderID = event.sender.id;

@@ -27,7 +27,7 @@ const app = express();
 
 app.set('port', (process.env.PORT || 5000));
 // Must be called before bodyParser
-app.use(xhub({ algorithm: 'sha1', secret: process.env.APP_SECRET }));
+app.use(xhub({ algorithm: 'sha1', secret: APP_SECRET }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use('/static', express.static('public'));
@@ -49,8 +49,6 @@ app.get('/webhook/', function (req, res) {
 
 // Handle messages
 app.post('/webhook/', function(req, res) {
-  console.log(req);
-
   // Verify signature
   if (req.isXHub) {
     if (req.isXHubValid()) {

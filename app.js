@@ -3,10 +3,9 @@
 const bodyParser = require('body-parser');
 const config = require('config');
 const express = require('express');
-const request = require('request');
 const xhub = require('express-x-hub');
 
-const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ? 
+const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ?
   process.env.MESSENGER_APP_SECRET :
   config.get('appSecret');
 
@@ -23,6 +22,10 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
   process.exit(1);
 }
 
+// Messenger API utils
+const m = require('./messenger.js')(PAGE_ACCESS_TOKEN);
+
+// Setup app
 const app = express();
 
 app.set('port', (process.env.PORT || 5000));
@@ -32,6 +35,27 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use('/static', express.static('public'));
 
+// Setup session storage
+// TO-DO: Refactor into a new module and switch to Redis
+let conversations = {};
+function getContext(userid) {
+  if (conversations[userid]) {
+    if ((new Date()).getTime() - conversations[userid].lastReceived <
+      config.get('sessionMaxLength')
+    ) {
+      return conversations[userid];
+    } else {
+      // TO-DO: If there is a stale, incomplete session, follow up first.
+      console.log('Previous session discarded: ' + conversations[userid]);
+    }
+  }
+
+  return { state: 'new' };
+}
+
+function updateContext(userid, context) {
+  conversations[userid] = context;
+}
 
 // Index route
 app.get('/', function (req, res) {
@@ -40,7 +64,7 @@ app.get('/', function (req, res) {
 
 // Webhook verification
 app.get('/webhook/', function (req, res) {
-  if (req.query['hub.mode'] === 'subscribe' && 
+  if (req.query['hub.mode'] === 'subscribe' &&
     req.query['hub.verify_token'] === 'youpin.city.bot.token') {
     res.status(200).send(req.query['hub.challenge']);
   }
@@ -60,214 +84,191 @@ app.post('/webhook/', function(req, res) {
     return;
   }
 
-  console.log(req.body);
-
   let data = req.body;
   if (data.object == 'page') {
-    data.entry.forEach(function(pageEntry) {
-      const pageID = pageEntry.id;
-      const timeOfEvent = pageEntry.time;
-
-      pageEntry.messaging.forEach(function(messagingEvent) {
-        if (messagingEvent.message) {
-          receivedMessage(messagingEvent);
-        } else if (messagingEvent.postback) {
-          receivedPostback(messagingEvent);
+    data.entry.forEach((pageEntry)  => {
+      pageEntry.messaging.forEach((msgEvent) => {
+        if (msgEvent.message) {
+          receivedMessage(msgEvent);
+        } else if (msgEvent.postback) {
+          receivedPostback(msgEvent);
         } else {
-          console.log("Webhook received unhandled messagingEvent: ", messagingEvent);
+          console.log('Webhook received unhandled messaging event: ' +
+            msgEvent);
         }
       });
     });
   }
-
-  res.sendStatus(200);
 });
 
+// TO-DO: Refactor receivedMessage and receivedPostback into a bot module
 function receivedMessage(event) {
-  const senderID = event.sender.id;
-  const recipientID = event.recipient.id;
-  const timeOfMessage = event.timestamp;
+  const userid = event.sender.id;
+  const timestamp = event.timestamp;
   const message = event.message;
-
-  console.log("Received message for user %d and page %d at %d with message:", 
-    senderID, recipientID, timeOfMessage);
-  console.log(JSON.stringify(message));
-
-  const messageId = message.mid;
-
-  // You may get a text or attachment but not both
   const messageText = message.text;
-  const messageAttachments = message.attachments;
+  const attachments = message.attachments;
 
-  if (messageText) {
-
-    // If we receive a text message, check to see if it matches any special
-    // keywords and send back the corresponding example. Otherwise, just echo
-    // the text we received.
-    switch (messageText) {
-      case 'image':
-        sendImageMessage(senderID);
-        break;
-
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
-
-      case 'generic':
-        sendGenericMessage(senderID);
-        break;
-
-      case 'receipt':
-        sendReceiptMessage(senderID);
-        break;
-
-      default:
-        sendTextMessage(senderID, messageText);
-    }
-  } else if (messageAttachments) {
-    sendTextMessage(senderID, 'Message with attachment received');
+  let context = getContext(userid);
+  context.lastReceived = timestamp;
+  if (context.scheduledNudge) {
+    clearTimeout(context.scheduledNudge);
+    delete context['scheduledNudge'];
   }
+
+  // console.log(JSON.stringify(message));
+
+  if (context.state === 'new') {
+    // New session
+    context.firstReceived = timestamp;
+
+    // NOTE: THe first message, presumably a greeting, is discared.
+
+    // TO-DO: Save/retrieve user profile from data storage
+    m.getProfile(userid, (profile) => {
+      context.state = 'started';
+      context.profile = profile;
+
+      context.lastSent = (new Date()).getTime();
+      m.sendText(userid, `สวัสดีฮ่ะคุณ ${profile.first_name} ` +
+        'วันนี้พบกับปัญหาอะไรในเมืองมาเล่าให้ดั้นฮั้นฟังฮะ ' +
+        'เอาแบบละเอียดๆเลยนะฮ้า ถ้าช่วยดั้น tag หมวดปัญหาที่พบ เช่น #ทางเท้า หรือ ' +
+        '#น้ำท่วม ได้ก็จะเลิศมากเลยฮ่า'
+      );
+
+      context.scheduledNudge = setTimeout(() => {
+        let newContext = getContext(userid);
+        if (newContext.lastReceived == timestamp) {
+          context.lastSent = (new Date()).getTime();
+          m.sendText(userid, 'เอ๊า! มัวรออะไรอยู่ละฮะ พิมพ์ค่ะพิมพ์');
+          updateContext(userid, context);
+        }
+      }, 60000);
+    });
+  } else {
+    // Acknowledge/react to the message
+    if (messageText) {
+      if (context.desc) {
+        context.desc += ' ' + messageText;
+      } else {
+        context.desc = messageText;
+      }
+
+      let hashtags = [];
+      let mentions = [];
+      // Hacky solution -- regex gets too complicated with unicode characters.
+      // https://github.com/twitter/twitter-text/blob/master/js/twitter-text.js
+      const tokens = messageText.split(' ');
+      tokens.forEach(str => {
+        if (str[0] == '#' || str[0] == '＃') {
+          hashtags.push(str.substr(1));
+        } else if (str[0] == '@' || str[0] == '＠') {
+          mentions.push(str.substr(1));
+        }
+      });
+
+      if (hashtags.length > 0) {
+        if (context.hashtags) {
+          context.hashtags.push.apply(context.hashtags, hashtags)
+        } else {
+          context.hashtags = hashtags;
+        }
+      }
+      if (mentions.length > 0) {
+        if (context.mentions) {
+          context.mentions.push.apply(context.mentions, mentions)
+        } else {
+          context.mentions = mentions;
+        }
+      }
+
+      if (hashtags.length + mentions.legnth < tokens.length / 2 + 1) {
+        // Presumably, a long description
+        context.lastSent = (new Date()).getTime();
+        m.sendText(userid, 'มีความน่ากลัว');
+      } else {
+        context.lastSent = (new Date()).getTime();
+        m.sendText(userid, 'อ่าฮะ');
+      }
+    } else {
+      if (!message.sticker_id) {
+        attachments.forEach(item => {
+          if (item.type === 'location') {
+            const point = item.payload.coordinates;
+            context.location = [point.lat, point.long];
+          } else if (item.type === 'image') {
+            if (!context.photos) {
+              context.photos = [];
+            }
+            context.photos.push(item.payload.url);
+          } else if (item.type === 'video') {
+            if (!context.videos) {
+              context.videos = [];
+            }
+            context.videos.push(item.payload.url);
+          }
+        });
+
+        if (attachments[0].type === 'location') {
+          context.lastSent = (new Date()).getTime();
+          m.sendText(userid, '(Y)');
+        } else if (attachments[0].type === 'image') {
+          context.lastSent = (new Date()).getTime();
+          m.sendText(userid, '😰');
+        } else if (attachments[0].type === 'video') {
+          context.lastSent = (new Date()).getTime();
+          m.sendText(userid, '😱');
+        }
+      }
+    }
+
+    context.scheduledNudge = setTimeout(() => {
+      let newContext = getContext(userid);
+      if (!newContext.desc) {
+        m.sendText(userid, 'อย่าลืมเล่ารายละเอียดให้ดั้นฟังสักนิดนะฮะ');
+      } else if (!newContext.photos && !newContext.videos) {
+        m.sendText(userid, 'ส่งภาพประกอบให้ดั้นสักหน่อยก็ดีนะฮะ');
+      } else if (!newContext.location) {
+        m.sendText(userid, 'พินตำแหน่งที่เกิดเหตุให้ดั้นด้วยฮ่า');
+      } else {
+        m.sendText(userid, 'ขอบคุณมากนะฮะ ดั้นฮั้นจะรีบแจ้งหน่วยงานที่รับผิดชอบ' +
+          `ให้เร็วที่สุดเลยฮ่า คุณ ${newContext.profile.first_name} ` +
+          'สามารถติดตามสถานะของปัญหานี้ได้ที่ลิงค์ด้านล่างเลย');
+        const elements = [{
+          title: 'ยุพิน | YouPin',
+          subtitle: newContext.desc,
+          item_url: 'http://dev.www.youpin.city/',
+          image_url: newContext.photos[0]
+        }]
+        m.sendGeneric(userid, elements);
+      }
+      newContext.lastSent = (new Date()).getTime();
+      updateContext(userid, newContext);
+    }, 15000);
+
+  }
+
+  updateContext(userid, context);
 }
 
 function receivedPostback(event) {
-  const senderID = event.sender.id;
+  const userid = event.sender.id;
   const recipientID = event.recipient.id;
   const timeOfPostback = event.timestamp;
 
-  // The 'payload' param is a developer-defined field which is set in a postback 
-  // button for Structured Messages. 
+  // The 'payload' param is a developer-defined field which is set in a postback
+  // button for Structured Messages.
   const payload = event.postback.payload;
 
-  console.log("Received postback for user %d and page %d with payload '%s' " + 
-    "at %d", senderID, recipientID, payload, timeOfPostback);
+  console.log(`Received postback for user ${userid} and page ${recipientID}` +
+    `with payload ${payload} at ${timeOfPostback}`);
 
-  // When a postback is called, we'll send a message back to the sender to 
+  // When a postback is called, we'll send a message back to the sender to
   // let them know it was successful
-  sendTextMessage(senderID, 'Postback called');
+  m.sendText(userid, 'Postback called');
 }
 
-function sendImageMessage(recipientId) {
-  const messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "image",
-        payload: {
-          url: "http://i.imgur.com/zYIlgBl.png"
-        }
-      }
-    }
-  };
+app.listen(app.get('port'), function() {
+  console.log(`Node app is running on port ${app.get('port')}`);
+});
 
-  callSendAPI(messageData);
-}
-
-function sendTextMessage(recipientId, messageText) {
-  const messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-function sendButtonMessage(recipientId) {
-  const messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text: "This is test text",
-          buttons:[{
-            type: "web_url",
-            url: "https://www.oculus.com/en-us/rift/",
-            title: "Open Web URL"
-          }, {
-            type: "postback",
-            title: "Call Postback",
-            payload: "Developer defined postback"
-          }]
-        }
-      }
-    }
-  };  
-
-  callSendAPI(messageData);
-}
-
-function sendGenericMessage(recipientId) {
-  const messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "generic",
-          elements: [{
-            title: "rift",
-            subtitle: "Next-generation virtual reality",
-            item_url: "https://www.oculus.com/en-us/rift/",               
-            image_url: "http://messengerdemo.parseapp.com/img/rift.png",
-            buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/rift/",
-              title: "Open Web URL"
-            }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for first bubble",
-            }],
-          }, {
-            title: "touch",
-            subtitle: "Your Hands, Now in VR",
-            item_url: "https://www.oculus.com/en-us/touch/",               
-            image_url: "http://messengerdemo.parseapp.com/img/touch.png",
-            buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/touch/",
-              title: "Open Web URL"
-            }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for second bubble",
-            }]
-          }]
-        }
-      }
-    }
-  };  
-
-  callSendAPI(messageData);
-}
-
-function callSendAPI(messageData) {
-  request({
-    uri: 'https://graph.facebook.com/v2.6/me/messages',
-    qs: { access_token: PAGE_ACCESS_TOKEN },
-    method: 'POST',
-    json: messageData
-  }, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      console.log("Successfully sent generic message with id %s to recipient %s", 
-        body.message_id, body.recipient_id);
-    } else {
-      console.error('Unable to send message.');
-      console.error(response);
-      console.error(error);
-    }
-  });  
-}
-
-app.listen(app.get('port'))

@@ -1,35 +1,27 @@
 {
-  /**
-   * Application configuration section
-   * http://pm2.keymetrics.io/docs/usage/application-declaration/
-   */
-  apps : [
+  "apps" : [
     {
-      name      : "API",
-      script    : "app.js",
-      env: {
-        COMMON_VARIABLE: "true"
+      "name": "API",
+      "script": "app.js",
+      "env": {
+        "COMMON_VARIABLE": "true"
       },
-      env_production : {
-        NODE_ENV: "production"
+      "env_production" : {
+        "NODE_ENV": "production"
       }
     },
   ],
 
-  /**
-   * Deployment section
-   * http://pm2.keymetrics.io/docs/usage/deployment/
-   */
-  deploy : {
-    production : {
-      user : "root",
-      host : ["128.199.87.142"],
-      ref  : "origin/master",
-      repo : "git@github.com:youpin-city/youpin-bot.git",
-      path : "/opt/bot.youpin.city",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production",
-      env  : {
-        "NODE_ENV": "development"
+  "deploy" : {
+    "production" : {
+      "user": "root",
+      "host": ["128.199.87.142"],
+      "ref": "origin/master",
+      "repo": "git@github.com:youpin-city/youpin-bot.git",
+      "path": "/opt/bot.youpin.city",
+      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production && cp ../shared/bot-credentials/production.json config/production.json",
+      "env": {
+        "NODE_ENV": "production"
       }
     },
   }

@@ -3,6 +3,12 @@
     {
       "name": "youpin-bot",
       "script": "app.js",
+      "watch": true,
+      "ignore_watch": [
+        "[\\/\\\\]\\./",
+        ".git",
+        "node_modules",
+      ],
       "env": {
         "COMMON_VARIABLE": "true"
       },

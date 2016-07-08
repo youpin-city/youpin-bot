@@ -6,7 +6,7 @@ module.exports = (sessionMaxLength) => {
 
     getContext: function(userid) {
       if (this._conversations[userid]) {
-        if ((new Date()).getTime() - this._conversations[userid].lastReceived <
+        if ((new Date()).getTime() - this._conversations[userid].firstReceived <
           sessionMaxLength
         ) {
           return this._conversations[userid];
@@ -16,7 +16,7 @@ module.exports = (sessionMaxLength) => {
         }
       }
 
-      return { state: 'new' };
+      return {};
     },
 
     updateContext: function(userid, context) {

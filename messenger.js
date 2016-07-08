@@ -32,7 +32,7 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
         },
         message: {
           attachment: {
-            type: "image",
+            type: 'image',
             payload: {
               url: url
             }
@@ -55,6 +55,19 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
       _callSendAPI(messageData);
     },
 
+    sendTextWithReplies: function(userid, text, replies) {
+      const messageData = {
+        recipient: {
+          id: userid
+        },
+        message: {
+          text: text,
+          quick_replies: replies
+        }
+      };
+      _callSendAPI(messageData);
+    },
+
     sendButton: function(userid, text, buttons) {
       const messageData = {
         recipient: {
@@ -62,9 +75,9 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
         },
         message: {
           attachment: {
-            type: "template",
+            type: 'template',
             payload: {
-              template_type: "button",
+              template_type: 'button',
               text: text,
               buttons: buttons
             }
@@ -82,9 +95,9 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
         },
         message: {
           attachment: {
-            type: "template",
+            type: 'template',
             payload: {
-              template_type: "generic",
+              template_type: 'generic',
               elements: elements
             }
           }
@@ -115,6 +128,22 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
           }
         }
       );
+    },
+
+    createPostbackButton: function(title, payload) {
+      return {
+        type: 'postback',
+        title: title,
+        payload: payload
+      };
+    },
+
+    createQuickReplyButton: function(title, payload) {
+      return {
+        content_type: 'text',
+        title: title,
+        payload: payload
+      };
     }
   };
 

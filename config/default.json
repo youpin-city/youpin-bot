@@ -2,6 +2,7 @@
     "appSecret": "",
     "pageAccessToken": "",
     "validationToken": "",
-    "sessionMaxLength": 600000
+    "sessionMaxLength": 600000,
+    "apiUri": "http://dev.api.youpin.city"
 }
 

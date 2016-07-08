@@ -17,7 +17,10 @@ const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
   (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
   config.get('pageAccessToken');
 
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
+const API_URI = (process.env.API_URI) ?
+  process.env.API_URI : config.get('apiUri');
+
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && API_URI)) {
   console.error('Missing config values');
   process.exit(1);
 }
@@ -40,8 +43,11 @@ const m = require('./messenger.js')(PAGE_ACCESS_TOKEN);
 // Conversation context
 const conversation = require('./conversation.js')(config.get('sessionMaxLength'));
 
+// Youpin API utils
+const api = require('./youpin-api.js')(API_URI);
+
 // Youpin bot
-const youpin = require('./youpin.js')(m, conversation);
+const youpin = require('./youpin.js')(m, api, conversation);
 
 
 // Index route
@@ -77,10 +83,8 @@ app.post('/webhook/', function(req, res) {
   if (data.object == 'page') {
     data.entry.forEach((pageEntry)  => {
       pageEntry.messaging.forEach((msgEvent) => {
-        if (msgEvent.message) {
-          youpin.onMessageReceived(msgEvent);
-        } else if (msgEvent.postback) {
-          youpin.onPostbackReceived(msgEvent);
+        if (msgEvent.message || msgEvent.postback) {
+          youpin.onMessaged(msgEvent);
         } else {
           console.log('Webhook received unhandled messaging event: ' +
             msgEvent);

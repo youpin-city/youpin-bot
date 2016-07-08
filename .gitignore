@@ -4,4 +4,6 @@ ngrok
 node_modules
 
 config/production.json
+ 
+Procfile
 

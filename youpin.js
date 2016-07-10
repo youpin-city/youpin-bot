@@ -300,7 +300,7 @@ module.exports = (m, api, conversation) => {
                 m.sendTextWithReplies(userid, 'รบกวนช่วยดั๊นฮั้นเลือกหมวดปัญหาที่พบด้วยฮ่า จะเลือกจากตัวอย่าง ' +
                   'หรือพิมพ์ #หมวดปัญหา เองเลยก็ได้นะฮ้า', tagReplies.slice(1));
               } else {
-                m.sendTextWithReplies(userid, 'Could you please help me select appropriate categories for the issue?' +
+                m.sendTextWithReplies(userid, 'Could you please help me select appropriate categories for the issue? ' +
                   'You can pick one from the list below or type #<category> for a custom category.', tagRepliesEN.slice(1));
               }
             }
@@ -405,6 +405,7 @@ module.exports = (m, api, conversation) => {
                 }]
                 m.sendGeneric(userid, elements);
                 context = {};
+                conversation.updateContext(userid, context);
               }
             );
           } else {

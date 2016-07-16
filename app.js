@@ -20,7 +20,16 @@ const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
 const API_URI = (process.env.API_URI) ?
   process.env.API_URI : config.get('apiUri');
 
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && API_URI)) {
+const API_USERNAME = (process.env.API_USERNAME) ?
+  process.env.API_USERNAME : config.get('apiUsername');
+
+const API_PASSWORD = (process.env.API_PASSWORD) ?
+  process.env.API_PASSWORD : config.get('apiPassword');
+
+const API_USER_ID = (process.env.API_USER_ID) ?
+  process.env.API_USER_ID : config.get('apiUserId');
+
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && API_URI && API_USERNAME && API_PASSWORD && API_USER_ID)) {
   console.error('Missing config values');
   process.exit(1);
 }
@@ -44,11 +53,12 @@ const m = require('./messenger.js')(PAGE_ACCESS_TOKEN);
 const conversation = require('./conversation.js')(config.get('sessionMaxLength'));
 
 // Youpin API utils
-const api = require('./youpin-api.js')(API_URI);
-
-// Youpin bot
-const youpin = require('./youpin.js')(m, api, conversation);
-
+const api_lib = require('./youpin-api.js');
+var youpin;
+new api_lib(API_URI, API_USERNAME, API_PASSWORD).then(function(api) {
+  // Youpin bot
+  youpin = require('./youpin.js')(m, api, conversation, API_USER_ID);
+});
 
 // Index route
 app.get('/', function (req, res) {

@@ -1,4 +1,4 @@
-module.exports = (m, api, conversation) => {
+module.exports = (m, api, conversation, apiUserId) => {
   'use strict';
 
   const PAYLOAD_NEW_PIN = 'new_pin';
@@ -386,17 +386,19 @@ module.exports = (m, api, conversation) => {
             api.postPin(
               {
                 categories: context.categories,
-                chatbot_userid: userid,
                 created_time: (new Date()).getTime(),
                 detail: desc,
-                location: context.location,
-                owner: 'youpin',
+                location: {
+                  coordinates: context.location
+                },
+                owner: apiUserId,
                 photos: context.photos,
+                provider: apiUserId,
                 status: 'unverified',
                 tags: context.hashtags
               },
               (res) => {
-                const pinId = res.name;
+                const pinId = res._id
                 const elements = [{
                   title: 'ยุพิน | YouPin',
                   subtitle: desc,

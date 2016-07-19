@@ -3,6 +3,9 @@
     "pageAccessToken": "",
     "validationToken": "",
     "sessionMaxLength": 600000,
-    "apiUri": "http://dev.api.youpin.city"
+    "apiUri": "http://dev.api.youpin.city",
+    "apiUsername": "",
+    "apiPassword": "",
+    "apiUserId": ""
 }
 

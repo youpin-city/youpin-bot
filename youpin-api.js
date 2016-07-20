@@ -49,10 +49,13 @@ class Api {
   }
 
   uploadPhotoFromURL(imgLink, callback) {
+    const json = {
+      url: imgLink
+    };
+
     request
-      .post(this.uri + '/photos/uploadfromurl')
-      .type('json')
-      .send('"' + imgLink + '"')
+      .post(this.uri + '/photos/upload_from_url')
+      .send(json)
       .end(function (error, response) {
         if (!error && response.ok) {
           callback(response.body);

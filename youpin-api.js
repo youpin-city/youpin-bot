@@ -50,9 +50,8 @@ class Api {
 
   uploadPhotoFromURL(imgLink, callback) {
     request
-      .post(this.uri + '/photos/uploadfromurl')
-      .type('json')
-      .send('"' + imgLink + '"')
+      .post(this.uri + '/photos/upload_from_url')
+      .send({ url: imgLink })
       .end(function (error, response) {
         if (!error && response.ok) {
           callback(response.body);

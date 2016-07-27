@@ -1,4 +1,4 @@
-[YouPin (ยุพิน)](https://raw.githubusercontent.com/youpin-city/youpin-web/master/public/image/logo.png)
+![YouPin (ยุพิน)](https://raw.githubusercontent.com/youpin-city/youpin-web/master/public/image/logo.png)
 
 # YouPin Chat Bot
 

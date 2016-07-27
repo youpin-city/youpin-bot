@@ -374,9 +374,8 @@ module.exports = (m, api, conversation, apiUserId) => {
           if (isEnding) {
             context.lastSent = (new Date()).getTime();
             if (!context.isEnglish) {
-              m.sendText(userid, `ขอบคุณมากฮ่า ขั้นตอนสุดท้าย รบกวน คุณ ${context.profile.first_name} ` +
-                'ยืนยันตัวตนและโพสต์พินลงบนเวบผ่านลิงค์ด้านล่างนี้ด้วยนะฮ้า ' +
-                'ดั๊นฮั้นจะรีบแจ้งหน่วยงานที่รับผิดชอบให้เร็วที่สุดเลยฮ่า');
+              m.sendText(userid, `ขอบคุณมากฮ่า ดั๊นฮั้นได้รับรายงานเรียบร้อยแล้ว คุณ ${context.profile.first_name} ` +
+                'สามารถเข้าไปดูในเวบตามลิงค์ด้านล่างนี้ได้เลยนะฮ้า ');
             } else {
               m.sendText(userid, `Thank you very much, ${context.profile.first_name}. ` +
                 'Please follow the link below to verify yourself and submit the report. ' +

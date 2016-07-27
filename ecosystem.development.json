@@ -13,7 +13,8 @@
         "COMMON_VARIABLE": "true"
       },
       "env_development": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "PORT": "5100"
       }
     }
   ],
@@ -25,7 +26,7 @@
       "ref": "origin/master",
       "repo": "git@github.com:youpin-city/youpin-bot.git",
       "path": "/opt/youpin-bot.development",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.development.json --env development --node-args port=5100 && cp /opt/youpin-credentials/bot-credentials/development.json config/development.json",
+      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.development.json --env development && cp /opt/youpin-credentials/bot-credentials/development.json config/development.json",
       "env": {
         "NODE_ENV": "development"
       }

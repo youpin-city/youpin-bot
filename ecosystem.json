@@ -13,9 +13,11 @@
         "COMMON_VARIABLE": "true"
       },
       "env_production" : {
+        "PORT": "5000",
         "NODE_ENV": "production"
       },
       "env_development": {
+        "PORT": "5100",
         "NODE_ENV": "development"
       }
     },
@@ -28,7 +30,7 @@
       "ref": "origin/master",
       "repo": "git@github.com:youpin-city/youpin-bot.git",
       "path": "/opt/youpin-bot.production",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production --node-args port=5000 && cp /opt/youpin-credentials/bot-credentials/production.json config/production.json",
+      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production && cp /opt/youpin-credentials/bot-credentials/production.json config/production.json",
       "env": {
         "NODE_ENV": "production"
       }
@@ -40,7 +42,7 @@
       "ref": "origin/master",
       "repo": "git@github.com:youpin-city/youpin-bot.git",
       "path": "/opt/youpin-bot.development",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.development.json --env development --node-args port=5100 && cp /opt/youpin-credentials/bot-credentials/development.json config/development.json",
+      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.development.json --env development && cp /opt/youpin-credentials/bot-credentials/development.json config/development.json",
       "env": {
         "NODE_ENV": "development"
       }

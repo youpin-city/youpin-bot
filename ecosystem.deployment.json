@@ -1,7 +1,7 @@
 {
   "apps" : [
     {
-      "name": "youpin-bot",
+      "name": "youpin-bot-dev",
       "script": "app.js",
       "watch": true,
       "ignore_watch": [
@@ -12,9 +12,6 @@
       "env": {
         "COMMON_VARIABLE": "true"
       },
-      "env_production" : {
-        "NODE_ENV": "production"
-      },
       "env_development": {
         "NODE_ENV": "development"
       }
@@ -22,18 +19,6 @@
   ],
 
   "deploy" : {
-    "production" : {
-      "user": "root",
-      "host": ["128.199.87.142"],
-      "ref": "origin/master",
-      "repo": "git@github.com:youpin-city/youpin-bot.git",
-      "path": "/opt/youpin-bot.production",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production --node-args port=5000 && cp /opt/youpin-credentials/bot-credentials/production.json config/production.json",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    },
-
     "development" : {
       "user": "root",
       "host": ["128.199.87.142"],

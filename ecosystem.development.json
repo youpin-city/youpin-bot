@@ -14,7 +14,7 @@
       "env_development": {
         "NODE_ENV": "development"
       }
-    },
+    }
   ],
 
   "deploy" : {

@@ -69,7 +69,7 @@ app.get('/', function (req, res) {
 // Webhook verification
 app.get('/webhook/', function (req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
-    req.query['hub.verify_token'] === 'youpin.city.bot.token') {
+    req.query['hub.verify_token'] === config.get('validationToken')) {
     res.status(200).send(req.query['hub.challenge']);
   }
   res.sendStatus(403);

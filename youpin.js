@@ -55,10 +55,6 @@ module.exports = (m, api, conversation, apiUserId) => {
     );
   }
 
-  setInterval(() => {
-    api.refreshToken();
-  }, 23 * 60 * 60000); // Refresh token every 23 hours
-
   function greetEN(userid, firstName) {
     const buttons = [
       m.createPostbackButton('Report an issue', PAYLOAD_NEW_PIN),

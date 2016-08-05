@@ -18,6 +18,11 @@ class Api {
       .configure(hooks())
       .configure(rest(uri).superagent(request))
       .configure(authentication());
+
+    setInterval(() => {
+      api.refreshToken();
+    }, 23 * 60 * 60000); // Refresh token every 23 hours
+
     return new Promise((resolve, reject) => {
       app.authenticate({
         type: 'local',

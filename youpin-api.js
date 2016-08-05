@@ -55,27 +55,6 @@ class Api {
     });
   }
 
-  refreshToken() {
-    // TO-DO: Call /token/auth/refresh instead
-    const app = feathers()
-      .configure(hooks())
-      .configure(rest(uri).superagent(request))
-      .configure(authentication());
-
-    new Promise(resolve => {
-      app.authenticate({
-        type: 'local',
-        'email': this.username,
-        'password': this.password
-      }).then(result => {
-        this.token = app.get('token');
-        resolve(this);
-      }).catch(error => {
-        console.log(error);
-      });
-    });
-  }
-
   postPin(json, callback) {
     request
       .post(this.uri + '/pins')

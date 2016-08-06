@@ -18,7 +18,12 @@ class Api {
       .configure(hooks())
       .configure(rest(uri).superagent(request))
       .configure(authentication());
-    return new Promise(resolve => {
+
+    setInterval(() => {
+      api.refreshToken();
+    }, 23 * 60 * 60000); // Refresh token every 23 hours
+
+    return new Promise((resolve, reject) => {
       app.authenticate({
         type: 'local',
         'email': username,
@@ -28,6 +33,29 @@ class Api {
         resolve(this);
       }).catch(error => {
         console.log(error);
+        reject(error);
+      });
+    });
+  }
+
+  refreshToken() {
+    // TO-DO: Call /token/auth/refresh instead
+    const app = feathers()
+      .configure(hooks())
+      .configure(rest(this.uri).superagent(request))
+      .configure(authentication());
+
+    new Promise((resolve, reject) => {
+      app.authenticate({
+        type: 'local',
+        'email': this.username,
+        'password': this.password
+      }).then(result => {
+        this.token = app.get('token');
+        resolve(this);
+      }).catch(error => {
+        console.log(error);
+        reject(error);
       });
     });
   }

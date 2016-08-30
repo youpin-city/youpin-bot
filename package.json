@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "asyncawait": "^1.0.6",
+    "bluebird": "^3.4.3",
     "body-parser": "^1.15.2",
     "config": "^1.21.0",
     "eslint-plugin-import": "^1.9.2",
@@ -20,6 +22,8 @@
     "feathers-authentication": "^0.7.9",
     "feathers-hooks": "^1.5.4",
     "feathers-rest": "^1.4.3",
+    "lodash": "^4.15.0",
+    "redis": "^2.6.2",
     "request": "^2.72.0",
     "superagent": "^2.1.0"
   },

@@ -5,13 +5,16 @@ services:
     build: .
     depends_on:
       - api
+      - redis
     ports:
       -  "5100:5100"
   api:
-    build: https://github.com/youpin-city/youpin-api.git
+    build: ../youpin-api
     ports:
       -  "9100:9100"
     depends_on:
       - mongodb
   mongodb:
     image: mongo
+  redis:
+    image: redis

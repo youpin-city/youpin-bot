@@ -1,3 +1,8 @@
+const await = require('asyncawait/await');
+const async = require('asyncawait/async');
+const Promise = require('bluebird');
+const _ = require('lodash');
+
 module.exports = (m, api, conversation, apiUserId) => {
   'use strict';
 
@@ -70,20 +75,29 @@ module.exports = (m, api, conversation, apiUserId) => {
   }
 
   function addPhotos(attachments, context) {
-    attachments.forEach(item => {
-      if (item.type === 'image') {
-        api.uploadPhotoFromURL(
-          item.payload.url,
-          (res) => {
-            // TO-DO: There is a slim chance that the pin is posted
-            // before the photo is successfully uploaded.
-            context.photos.push(res.url);
-          }
-        );
-      } else if (item.type === 'video') {
-        // TO-DO: Upload video to Firebase
-        context.videos.push(item.payload.url);
-      }
+
+    attachments = _.filter( attachments, (item) => {
+        return _.includes( ['image','video'], item.type );
+    });
+
+    return Promise.map( attachments, (item) => {
+      return new Promise( (resolve, reject) => {
+        if (item.type === 'image') {
+          api.uploadPhotoFromURL( item.payload.url, (res) => {
+            item.payload.url = res.url;
+            resolve(item);
+          });
+        } else {
+          // TODO: upload video to firebase
+          resolve(item);
+        }
+      });
+    }).each( (item) => {
+      let type = "videos";
+        if (item.type === 'image') {
+          type = "photos";
+        }
+      context[type].push(item.payload.url);
     });
   }
 
@@ -132,7 +146,7 @@ module.exports = (m, api, conversation, apiUserId) => {
   }
 
   return {
-    onMessaged: function(event) {
+    onMessaged: async(function(event) {
       const userid = event.sender.id;
       const timestamp = event.timestamp;
 
@@ -145,7 +159,11 @@ module.exports = (m, api, conversation, apiUserId) => {
       console.log(event.postback);
       const postback = event.postback ? event.postback.payload : undefined;
 
-      let context = conversation.getContext(userid);
+      let context = await(conversation.getContext(userid));
+
+      console.log("---- Loaded previous context" ) ;
+      console.log(context);
+
       // Override context
       if (messageText === '#เริ่มใหม่' || postback === PAYLOAD_THAI) {
         context = {};
@@ -161,18 +179,20 @@ module.exports = (m, api, conversation, apiUserId) => {
         // New session
         context.firstReceived = timestamp;
 
-        // TO-DO: Save/retrieve user profile from data storage
-        m.getProfile(userid, (profile) => {
-          context.profile = profile;
+        let profile = await(new Promise( (resolve,reject) => {
+          m.getProfile(userid, resolve);
+        }));
 
-          context.lastSent = (new Date()).getTime();
-          context.state = STATE_WAIT_INTENT;
-          if (context.isEnglish) {
-            greetEN(userid, profile.first_name);
-          } else {
-            greet(userid, profile.first_name);
-          }
-        });
+        context.profile  = profile;
+        context.lastSent = (new Date()).getTime();
+        context.state    = STATE_WAIT_INTENT;
+
+        if (context.isEnglish) {
+          greetEN(userid, profile.first_name);
+        } else {
+          greet(userid, profile.first_name);
+        }
+
       } else if (context.state === STATE_WAIT_INTENT) {
         if (postback === PAYLOAD_NEW_PIN) {
           context.lastSent = (new Date()).getTime();
@@ -181,26 +201,31 @@ module.exports = (m, api, conversation, apiUserId) => {
           } else {
             m.sendText(userid, 'Awesome, let\'s get started!')
           }
-          setTimeout(() => {
-            context.lastSent = (new Date()).getTime();
-            context.state = STATE_WAIT_IMG;
-            context.photos = [];
-            context.videos = [];
-            if (!context.isEnglish) {
-              m.sendText(userid, 'ก่อนอื่นเลย รบกวนส่งรูปภาพหรือวิดีโอให้ดั๊นหน่อยฮ่า จะได้เข้าใจตรงกันเนอะ');
-            } else {
-              m.sendText(userid, 'First, can you send me photos or videos of the issue you found?');
-            }
-          }, 1000);
+
+          await(new Promise( (resolve, reject) => {
+            setTimeout(() => {
+              context.lastSent = (new Date()).getTime();
+              context.state = STATE_WAIT_IMG;
+              context.photos = [];
+              context.videos = [];
+              if (!context.isEnglish) {
+                m.sendText(userid, 'ก่อนอื่นเลย รบกวนส่งรูปภาพหรือวิดีโอให้ดั๊นหน่อยฮ่า จะได้เข้าใจตรงกันเนอะ');
+              } else {
+                m.sendText(userid, 'First, can you send me photos or videos of the issue you found?');
+              }
+              resolve();
+            }, 1000);
+          }));
+
         } else if (postback === PAYLOAD_CONTACT_US) {
           context.lastSent = (new Date()).getTime();
           context.state = STATE_DISABLED;
           if (!context.isEnglish) {
             m.sendText(userid, 'พิมพ์ข้อความไว้ได้เลยนะฮ้า ' +
-              'เดี๋ยวทีมงานจิตอาสาของดั๊นจะติดต่อกลับไปเร็วที่สุดฮ่า ');
+            'เดี๋ยวทีมงานจิตอาสาของดั๊นจะติดต่อกลับไปเร็วที่สุดฮ่า ');
           } else {
             m.sendText(userid, 'You can leave us messages, and ' +
-              'our staff will get back to you as soon as possible.');
+            'our staff will get back to you as soon as possible.');
           }
         } else {
           if (!context.isEnglish) {
@@ -218,18 +243,21 @@ module.exports = (m, api, conversation, apiUserId) => {
             } else {
               m.sendText(userid, '(Y) Sweet!');
             }
-            addPhotos(attachments, context);
-            setTimeout(() => {
-              context.lastSent = (new Date()).getTime();
-              context.state = STATE_WAIT_LOCATION;
-              if (!context.isEnglish) {
-                m.sendText(userid, 'ขั้นต่อไป ช่วยพินสถานที่ที่พบปัญหา โดยการแชร์ ' +
+            await(addPhotos(attachments, context));
+            await(new Promise( (resolve,reject) => {
+              setTimeout(() => {
+                context.lastSent = (new Date()).getTime();
+                context.state = STATE_WAIT_LOCATION;
+                if (!context.isEnglish) {
+                  m.sendText(userid, 'ขั้นต่อไป ช่วยพินสถานที่ที่พบปัญหา โดยการแชร์ ' +
                   'location จาก Messenger App บนมือถือของคุณด้วยฮ่า');
-              } else {
-                m.sendText(userid, 'Next, can you help us locate the issue by sharing the location using ' +
+                } else {
+                  m.sendText(userid, 'Next, can you help us locate the issue by sharing the location using ' +
                   'Facebook Messenger App on your mobile phone?')
-              }
-            }, 1000);
+                }
+                resolve();
+              }, 1000);
+            }));
           } else {
             if (!context.isEnglish) {
               m.sendText(userid, 'ขอรูปฮ่ะรูป หรือไม่ก็วีดีโอฮ่า อย่างอื่นยังไม่เอาน้า ดั๊นสับสนไปหมดแล้วนะฮ้า');
@@ -254,18 +282,21 @@ module.exports = (m, api, conversation, apiUserId) => {
           }
           const point = attachments[0].payload.coordinates;
           context.location = [point.lat, point.long];
-          setTimeout(() => {
-            context.lastSent = (new Date()).getTime();
-            context.state = STATE_WAIT_DESC;
-            context.hashtags = [];
-            if (!context.isEnglish) {
-              m.sendText(userid, 'อธิบายปัญหาที่พบให้ดั๊นฮั้นฟังหน่อยฮ่า เอาละเอียดๆเลยนะฮะ');
-            } else {
-              m.sendText(userid, 'Alright, can you explain the issue you\'d like to report today? ' +
+          await(new Promise( (resolve,reject) => {
+            setTimeout(() => {
+              context.lastSent = (new Date()).getTime();
+              context.state = STATE_WAIT_DESC;
+              context.hashtags = [];
+              if (!context.isEnglish) {
+                m.sendText(userid, 'อธิบายปัญหาที่พบให้ดั๊นฮั้นฟังหน่อยฮ่า เอาละเอียดๆเลยนะฮะ');
+              } else {
+                m.sendText(userid, 'Alright, can you explain the issue you\'d like to report today? ' +
                 'Please make it as detailed as possible.');
-            }
-          }, 1000);
-        } else if (!isSticker && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
+              }
+              resolve();
+            }, 1000);
+          }));
+        } else if (!isSticker && attachments && attachments.length > 0 && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
           // Add photos/videos
           context.lastSent = (new Date()).getTime();
           if (!context.isEnglish) {
@@ -273,7 +304,7 @@ module.exports = (m, api, conversation, apiUserId) => {
           } else {
             m.sendText(userid, '(Y) Cool! Don\'t forget to send me the location.');
           }
-          addPhotos(attachments, context);
+          await(addPhotos(attachments, context));
         } else {
           if (!context.isEnglish) {
             m.sendText(userid, 'พิน location ให้เป๊ะเลยนะฮ้า หน่วยงานที่รับผิดชอบจะได้เข้าไปแก้ไขปัญหาให้ได้อย่างรวดเร็วฮ่า')
@@ -298,10 +329,10 @@ module.exports = (m, api, conversation, apiUserId) => {
               context.categories = [];
               if (!context.isEnglish) {
                 m.sendTextWithReplies(userid, 'รบกวนช่วยดั๊นฮั้นเลือกหมวดปัญหาที่พบด้วยฮ่า จะเลือกจากตัวอย่าง ' +
-                  'หรือพิมพ์ #หมวดปัญหา เองเลยก็ได้นะฮ้า', tagReplies.slice(1));
+                'หรือพิมพ์ #หมวดปัญหา เองเลยก็ได้นะฮ้า', tagReplies.slice(1));
               } else {
                 m.sendTextWithReplies(userid, 'Could you please help me select appropriate categories for the issue? ' +
-                  'You can pick one from the list below or type #<category> for a custom category.', tagRepliesEN.slice(1));
+                'You can pick one from the list below or type #<category> for a custom category.', tagRepliesEN.slice(1));
               }
             }
           } else {
@@ -347,7 +378,7 @@ module.exports = (m, api, conversation, apiUserId) => {
               m.sendText(userid, 'ภาพประกอบเยอะนะฮ้า ดั๊นฮั้นเก็บลงแฟ้มเรียบร้อย เล่าปัญหาที่พบต่อได้เลยฮ่า');
             } else {
               m.sendText(userid, 'The photos/videos have been added. ' +
-                'You can continue describing the issue.')
+              'You can continue describing the issue.')
             }
             addPhotos(attachments, context);
           } else if (attachments[0].type == 'location') {
@@ -376,27 +407,30 @@ module.exports = (m, api, conversation, apiUserId) => {
             if (!context.isEnglish) {
               m.sendText(userid, `ขอบคุณมากฮ่า ดั๊นฮั้นได้รับรายงานเรียบร้อยแล้ว คุณ ${context.profile.first_name} ` +
                 'สามารถเข้าไปดูในเวบตามลิงค์ด้านล่างนี้ได้เลยนะฮ้า ');
-            } else {
-              m.sendText(userid, `Thank you very much, ${context.profile.first_name}. ` +
-                'Please follow the link below to verify yourself and submit the report. ' +
-                'We will notify the responsible agency as soon as possible.')
-            }
-            const desc = context.desc.join(' ');
-            api.postPin(
-              {
-                categories: context.categories,
-                created_time: (new Date()).getTime(),
-                detail: desc,
-                location: {
-                  coordinates: context.location
-                },
-                owner: apiUserId,
-                photos: context.photos,
-                provider: apiUserId,
-                status: 'unverified',
-                tags: context.hashtags
-              },
-              (res) => {
+              } else {
+                m.sendText(userid, `Thank you very much, ${context.profile.first_name}. ` +
+                  'Please follow the link below to verify yourself and submit the report. ' +
+                  'We will notify the responsible agency as soon as possible.')
+                }
+                const desc = context.desc.join(' ');
+                let res = await( new Promise( (resolve,reject) => {
+                  api.postPin(
+                    {
+                      categories: context.categories,
+                      created_time: (new Date()).getTime(),
+                      detail: desc,
+                      location: {
+                        coordinates: context.location
+                      },
+                      owner: apiUserId,
+                      photos: context.photos,
+                      provider: apiUserId,
+                      status: 'unverified',
+                      tags: context.hashtags
+                    },
+                    resolve
+                  );
+                }));
                 const pinId = res._id
                 const elements = [{
                   title: 'ยุพิน | YouPin',
@@ -406,23 +440,21 @@ module.exports = (m, api, conversation, apiUserId) => {
                 }]
                 m.sendGeneric(userid, elements);
                 context = {};
-                conversation.updateContext(userid, context);
+                await(conversation.updateContext(userid, context));
+              } else {
+                context.lastSent = (new Date()).getTime();
+                if (!context.isEnglish) {
+                  m.sendTextWithReplies(userid, 'จบมั้ย? แท็กเพิ่มได้อีกเรื่อยๆนะฮะ', tagReplies);
+                } else {
+                  m.sendTextWithReplies(userid, 'Anything else? You can keep adding more tags.' , tagRepliesEN);
+                }
               }
-            );
-          } else {
-            context.lastSent = (new Date()).getTime();
-            if (!context.isEnglish) {
-              m.sendTextWithReplies(userid, 'จบมั้ย? แท็กเพิ่มได้อีกเรื่อยๆนะฮะ', tagReplies);
-            } else {
-              m.sendTextWithReplies(userid, 'Anything else? You can keep adding more tags.' , tagRepliesEN);
             }
           }
-        }
-      }
 
-      conversation.updateContext(userid, context);
-      console.log(context);
-    }
-
-  };
-};
+          await(conversation.updateContext(userid, context));
+          console.log("-- Saved context --");
+          console.log(context);
+        })
+      };
+    };

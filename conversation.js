@@ -1,26 +1,29 @@
-// TO-DO: Switch to a proper data storage (Redis?)
+const redisConf = require('config').get('redis');
+const Promise = require('bluebird');
+const await = require('asyncawait/await');
+const async = require('asyncawait/async');
+
+const redis = require('redis');
+
+Promise.promisifyAll(redis.RedisClient.prototype);
+Promise.promisifyAll(redis.Multi.prototype);
+
+const redisClient = redis.createClient(redisConf);
 
 module.exports = (sessionMaxLength) => {
   return {
-    _conversations: {},
-
-    getContext: function(userid) {
-      if (this._conversations[userid]) {
-        if ((new Date()).getTime() - this._conversations[userid].firstReceived <
-          sessionMaxLength
-        ) {
-          return this._conversations[userid];
-        } else {
-          // TO-DO: If there is a stale, incomplete session, follow up first.
-          console.log('Previous session discarded: ' + this._conversations[userid]);
-        }
-      }
-
-      return {};
-    },
-
-    updateContext: function(userid, context) {
-      this._conversations[userid] = context;
+    sessionPrefix: 'youpin-user:',
+    getContext: async(function(userid) {
+      var context  = JSON.parse(await(redisClient.getAsync( this._buildKey(userid) )))
+      console.log("GET CONTEXT FROM STORE " + JSON.stringify(context) );
+      return context || {};
+    }),
+    updateContext: async(function(userid, context) {
+      var res = await(redisClient.setexAsync( [ this._buildKey(userid), sessionMaxLength , JSON.stringify(context) ]));
+      console.log( 'Update context ' + userid + ' : ' + res );
+    }),
+    _buildKey: function(userid){
+      return this.sessionPrefix + userid;
     }
   };
 };

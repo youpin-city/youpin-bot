@@ -6,6 +6,9 @@
     "apiUri": "http://dev.api.youpin.city",
     "apiUsername": "",
     "apiPassword": "",
-    "apiUserId": ""
+    "apiUserId": "",
+    "redis": {
+        "host": "redis",
+        "port" : 6379
+    }
 }
-

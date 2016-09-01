@@ -2,6 +2,8 @@ FROM mhart/alpine-node:6.3
 
 MAINTAINER YouPin Team <dev@youpin.city>
 
+RUN apk add --update g++ make python
+
 RUN npm install -g pm2
 
 COPY package.json /code/package.json

@@ -84,7 +84,7 @@ You should copy the App Secret and Page Access Token. We will use them in our co
 
 10. Go to your created Facebook app. Under `Products` section, `+Add Product` and choose `Webhooks`.
 
-  Enter your `https://<id>.ngrok.io` into `Callback URL`.
+  Enter your `https://<id>.ngrok.io/webhook` into `Callback URL`.
 
   Enter your `validationToken` in Step 6. into `Verify token`.
 

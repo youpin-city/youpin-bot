@@ -117,6 +117,9 @@ This module manages conversation context for each user, e.g., whether he or she 
 ### youpin.js
 This module implements conversation logics for the bot. There are a lot of easy improvements we can potentially implement to make the bot appears smarter.
 
-- [ ] Use a proper framework to handle i18n strings ([#5](https://github.com/youpin-city/youpin-bot/issues/5))
+## Update localizations
+When adding new sentence, one should run `npm run i18n` to add the new senctences the localized files in `./locales`. Please make sure to install `dev` dependencies and be aware  that `node_modules` might affect `Docker` build.
+
+
 - [ ] Report a problem (skip the menu/choices) if the first message is a photo ([#8](https://github.com/youpin-city/youpin-bot/issues/8))
 - [ ] Create secret love from Auntie YouPin <3 ([#12](https://github.com/youpin-city/youpin-bot/issues/12))

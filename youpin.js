@@ -3,6 +3,11 @@ const async = require('asyncawait/async');
 const Promise = require('bluebird');
 const _ = require('lodash');
 
+var config = require("config");
+var i18n = require('i18n');
+
+i18n.configure( _.merge({}, config.get("i18n")) );
+
 module.exports = (m, api, conversation, apiUserId) => {
   'use strict';
 
@@ -39,37 +44,29 @@ module.exports = (m, api, conversation, apiUserId) => {
     ['ละเมิดสิทธิ', 'violation']
   ];
 
-  let tagReplies = [endingReply];
-  let tagRepliesEN = [endingReplyEN];
-  categories.forEach((item) => {
-    tagReplies.push(m.createQuickReplyButton('#' + item[0], item[1]));
-    tagRepliesEN.push(m.createQuickReplyButton('#' + item[1], item[1]));
-  });
+  /* Please make sure that #done is the first element in tagReplies */
+  let tagReplies = {
+    en: [m.createQuickReplyButton('#done', 'isEnding')],
+    th: [m.createQuickReplyButton('#done', 'isEnding')]
+  };
 
-  function greet(userid, firstName) {
+  _.chain(_.keys(tagReplies))
+    .each( lang => {
+      categories.forEach((item) => {
+        tagReplies[lang].push(m.createQuickReplyButton('#' + item[0], item[1]));
+      });
+    });
+
+  function greet(userid, context) {
     const buttons = [
-      m.createPostbackButton('พินปัญหา', PAYLOAD_NEW_PIN),
-      m.createPostbackButton('ติดต่อทีมงาน', PAYLOAD_CONTACT_US),
-      m.createPostbackButton('I can\'t read Thai', PAYLOAD_ENGLISH)
+      m.createPostbackButton(context.__('Report an issue'), PAYLOAD_NEW_PIN),
+      m.createPostbackButton(context.__('Contact us'), PAYLOAD_CONTACT_US),
+      m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_THAI)
     ];
 
     m.sendButton(
       userid,
-      `สวัสดีฮ่ะ คุณ ${firstName} วันนี้มีอะไรให้ป้ายุพินช่วยจ๊ะ`,
-      buttons
-    );
-  }
-
-  function greetEN(userid, firstName) {
-    const buttons = [
-      m.createPostbackButton('Report an issue', PAYLOAD_NEW_PIN),
-      m.createPostbackButton('Contact us', PAYLOAD_CONTACT_US),
-      m.createPostbackButton('พูดไทยเถอะป้า', PAYLOAD_THAI)
-    ];
-
-    m.sendButton(
-      userid,
-      `Hi ${firstName}! What would you like to do today?`,
+      context.__('Hi {{name}}! What would you like to do today?', { name: context.profile.first_name }),
       buttons
     );
   }
@@ -107,11 +104,8 @@ module.exports = (m, api, conversation, apiUserId) => {
 
     let isEnding = false;
     let endPos = -1;
-    if (!context.isEnglish) {
-      endPos = messageText.indexOf('#จบนะ');
-    } else {
-      endPos = messageText.indexOf('#done');
-    }
+
+    endPos = messageText.indexOf(context.__('#done'));
 
     if (endPos >= 0) {
       isEnding = true;
@@ -146,7 +140,7 @@ module.exports = (m, api, conversation, apiUserId) => {
   }
 
   return {
-    onMessaged: async(function(event) {
+    onMessaged: async (function(event) {
       const userid = event.sender.id;
       const timestamp = event.timestamp;
 
@@ -159,17 +153,19 @@ module.exports = (m, api, conversation, apiUserId) => {
       console.log(event.postback);
       const postback = event.postback ? event.postback.payload : undefined;
 
-      let context = await(conversation.getContext(userid));
+      let context = await (conversation.getContext(userid));
 
       console.log("---- Loaded previous context" ) ;
       console.log(context);
 
       // Override context
       if (messageText === '#เริ่มใหม่' || postback === PAYLOAD_THAI) {
-        context = {};
+        context = { url: "/?lang=th" };
       } else if (postback === PAYLOAD_ENGLISH) {
-        context = { isEnglish: true };
+        context = { url: "/?lang=en" };
       }
+
+      i18n.init(context);
 
       context.lastReceived = timestamp;
 
@@ -179,7 +175,7 @@ module.exports = (m, api, conversation, apiUserId) => {
         // New session
         context.firstReceived = timestamp;
 
-        let profile = await(new Promise( (resolve,reject) => {
+        let profile = await (new Promise( (resolve,reject) => {
           m.getProfile(userid, resolve);
         }));
 
@@ -187,32 +183,22 @@ module.exports = (m, api, conversation, apiUserId) => {
         context.lastSent = (new Date()).getTime();
         context.state    = STATE_WAIT_INTENT;
 
-        if (context.isEnglish) {
-          greetEN(userid, profile.first_name);
-        } else {
-          greet(userid, profile.first_name);
-        }
-
+        greet( userid, context );
       } else if (context.state === STATE_WAIT_INTENT) {
         if (postback === PAYLOAD_NEW_PIN) {
           context.lastSent = (new Date()).getTime();
-          if (!context.isEnglish) {
-            m.sendText(userid, 'เยี่ยมไปเลยฮ่า มัวรอช้าอะไรอยู่ล่ะฮะ เริ่มกันเลยดีกว่า!');
-          } else {
-            m.sendText(userid, 'Awesome, let\'s get started!')
-          }
 
-          await(new Promise( (resolve, reject) => {
+          m.sendText(userid, context.__('Awesome, let\'s get started!') );
+
+          await (new Promise( (resolve, reject) => {
             setTimeout(() => {
               context.lastSent = (new Date()).getTime();
               context.state = STATE_WAIT_IMG;
               context.photos = [];
               context.videos = [];
-              if (!context.isEnglish) {
-                m.sendText(userid, 'ก่อนอื่นเลย รบกวนส่งรูปภาพหรือวิดีโอให้ดั๊นหน่อยฮ่า จะได้เข้าใจตรงกันเนอะ');
-              } else {
-                m.sendText(userid, 'First, can you send me photos or videos of the issue you found?');
-              }
+
+              m.sendText(userid, context.__('First, can you send me photos or videos of the issue you found?'));
+
               resolve();
             }, 1000);
           }));
@@ -220,97 +206,62 @@ module.exports = (m, api, conversation, apiUserId) => {
         } else if (postback === PAYLOAD_CONTACT_US) {
           context.lastSent = (new Date()).getTime();
           context.state = STATE_DISABLED;
-          if (!context.isEnglish) {
-            m.sendText(userid, 'พิมพ์ข้อความไว้ได้เลยนะฮ้า ' +
-            'เดี๋ยวทีมงานจิตอาสาของดั๊นจะติดต่อกลับไปเร็วที่สุดฮ่า ');
-          } else {
-            m.sendText(userid, 'You can leave us messages, and ' +
-            'our staff will get back to you as soon as possible.');
-          }
+
+          m.sendText(userid, context.__('You can leave us messages, and our staff will get back to you as soon as possible.');
+
         } else {
-          if (!context.isEnglish) {
-            m.sendText(userid, 'ใจเย็นๆนะฮ้า ตอบคำถามดั๊นฮั้นก่อน');
-          } else {
-            m.sendText(userid, 'Slow down, could you please answer my question first?');
-          }
+          m.sendText(userid, context.__('Slow down, could you please answer my question first?') );
         }
       } else if (context.state === STATE_WAIT_IMG) {
         if (attachments) {
           if (!isSticker && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
             context.lastSent = (new Date()).getTime();
-            if (!context.isEnglish) {
-              m.sendText(userid, '(Y) แจ่มมากฮ่า');
-            } else {
-              m.sendText(userid, '(Y) Sweet!');
-            }
-            await(addPhotos(attachments, context));
-            await(new Promise( (resolve,reject) => {
+
+            m.sendText(userid, context.__('(Y) Sweet!') );
+
+            await (addPhotos(attachments, context));
+            await (new Promise( (resolve,reject) => {
               setTimeout(() => {
                 context.lastSent = (new Date()).getTime();
                 context.state = STATE_WAIT_LOCATION;
-                if (!context.isEnglish) {
-                  m.sendText(userid, 'ขั้นต่อไป ช่วยพินสถานที่ที่พบปัญหา โดยการแชร์ ' +
-                  'location จาก Messenger App บนมือถือของคุณด้วยฮ่า');
-                } else {
-                  m.sendText(userid, 'Next, can you help us locate the issue by sharing the location using ' +
-                  'Facebook Messenger App on your mobile phone?')
-                }
+
+                m.sendText( userid, context.__('Next, can you help us locate the issue by sharing the location using Facebook Messenger App on your mobile phone?') );
+
                 resolve();
               }, 1000);
             }));
           } else {
-            if (!context.isEnglish) {
-              m.sendText(userid, 'ขอรูปฮ่ะรูป หรือไม่ก็วีดีโอฮ่า อย่างอื่นยังไม่เอาน้า ดั๊นสับสนไปหมดแล้วนะฮ้า');
-            } else {
-              m.sendText(userid, 'Just photos or videos please. I\'m getting confused! 😓');
-            }
+              m.sendText( userid, context.__('Just photos or videos please. I\'m getting confused! 😓') );
           }
         } else {
-          if (!context.isEnglish) {
-            m.sendText(userid, 'ส่งภาพหรือวีดีโอมาให้ไวเลยฮ่า');
-          } else {
-            m.sendText(userid, 'Hurry up, I\'m still waiting for photos or videos.');
-          }
+          m.sendText(userid, context.__('Hurry up, I\'m still waiting for photos or videos.') );
         }
       } else if (context.state === STATE_WAIT_LOCATION) {
         if (attachments && attachments[0].type == 'location') {
           context.lastSent = (new Date()).getTime();
-          if (!context.isEnglish) {
-            m.sendText(userid, '🚩 อ้า ตรงนี้นี่เอง');
-          } else {
-            m.sendText(userid, '🚩 Ahh, got it.');
-          }
+
+          m.sendText(userid, context.__('🚩 Ahh, got it.') );
+
           const point = attachments[0].payload.coordinates;
           context.location = [point.lat, point.long];
-          await(new Promise( (resolve,reject) => {
+          await (new Promise( (resolve,reject) => {
             setTimeout(() => {
               context.lastSent = (new Date()).getTime();
               context.state = STATE_WAIT_DESC;
               context.hashtags = [];
-              if (!context.isEnglish) {
-                m.sendText(userid, 'อธิบายปัญหาที่พบให้ดั๊นฮั้นฟังหน่อยฮ่า เอาละเอียดๆเลยนะฮะ');
-              } else {
-                m.sendText(userid, 'Alright, can you explain the issue you\'d like to report today? ' +
-                'Please make it as detailed as possible.');
-              }
+
+              m.sendText(userid, context.__('Alright, can you explain the issue you\'d like to report today? Please make it as detailed as possible.'));
+
               resolve();
             }, 1000);
           }));
         } else if (!isSticker && attachments && attachments.length > 0 && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
           // Add photos/videos
           context.lastSent = (new Date()).getTime();
-          if (!context.isEnglish) {
-            m.sendText(userid, '(Y) เลิศฮ่า ส่งรูปเสร็จ แล้วก็อย่าลืมส่งพินให้ดั๊นฮั้นนะฮ้า');
-          } else {
-            m.sendText(userid, '(Y) Cool! Don\'t forget to send me the location.');
-          }
-          await(addPhotos(attachments, context));
+          m.sendText(userid, context.__('(Y) Cool! Don\'t forget to send me the location.') );
+          await (addPhotos(attachments, context));
         } else {
-          if (!context.isEnglish) {
-            m.sendText(userid, 'พิน location ให้เป๊ะเลยนะฮ้า หน่วยงานที่รับผิดชอบจะได้เข้าไปแก้ไขปัญหาให้ได้อย่างรวดเร็วฮ่า')
-          } else {
-            m.sendText(userid, 'Let us know the location so that the responsible agency can take care of the problem quickly.')
-          }
+          m.sendText(userid, context.__('Let us know the location so that the responsible agency can take care of the problem quickly.') );
         }
       } else if (context.state === STATE_WAIT_DESC) {
         if (messageText) {
@@ -319,75 +270,41 @@ module.exports = (m, api, conversation, apiUserId) => {
           if (isEnding) {
             if (context.descLength < 10) {
               context.lastSent = (new Date()).getTime();
-              if (!context.isEnglish) {
-                m.sendText(userid, 'เล่ารายละเอียดให้ดั๊นฮั้นฟังอีกสักหน่อยน่า พิมพ์ฮะพิมพ์');
-              } else {
-                m.sendText(userid, 'Provide us a little more detail please.');
-              }
+              m.sendText( userid, context.__('Provide us a little more detail please.') );
             } else {
               context.state = STATE_WAIT_TAGS;
               context.categories = [];
-              if (!context.isEnglish) {
-                m.sendTextWithReplies(userid, 'รบกวนช่วยดั๊นฮั้นเลือกหมวดปัญหาที่พบด้วยฮ่า จะเลือกจากตัวอย่าง ' +
-                'หรือพิมพ์ #หมวดปัญหา เองเลยก็ได้นะฮ้า', tagReplies.slice(1));
-              } else {
-                m.sendTextWithReplies(userid, 'Could you please help me select appropriate categories for the issue? ' +
-                'You can pick one from the list below or type #<category> for a custom category.', tagRepliesEN.slice(1));
-              }
+              m.sendTextWithReplies(userid, context.__('Could you please help me select appropriate categories for the issue? You can pick one from the list below or type #<category> for a custom category.'),
+                tagReplies[context.language].slice(1)
+              );
             }
           } else {
             if (context.desc.length == 1) {
               // After 1st response
               context.lastSent = (new Date()).getTime();
-              if (!context.isEnglish) {
-                m.sendTextWithReplies(
-                  userid,
-                  'พิมพ์ต่อมาได้เรื่อยๆเลยนะฮ้า เล่าเสร็จเมื่อไหร่ก็ พิมพ์มาว่า #จบนะ แล้วดั๊นฮั้น' +
-                  'จะเริ่มประมวลผมข้อมูลส่งต่อให้หน่วยงานที่เกี่ยวข้องฮ่า',
-                  [endingReply]
-                );
-              } else {
-                m.sendTextWithReplies(
-                  userid,
-                  'You can keep on typing! Send \'#done\' when you finish so that we can proceed to the next step.',
-                  [endingReplyEN]
-                );
-              }
+              m.sendTextWithReplies(
+                userid,
+                context.__('You can keep on typing! Send \'#done\' when you finish so that we can proceed to the next step.'),
+                take(tagReplies[context.language],1)
+              );
             } else if (context.descLength > 140) {
               context.lastSent = (new Date()).getTime();
-              if (!context.isEnglish) {
-                m.sendTextWithReplies(
-                  userid,
-                  'จบมั้ย? ถ้ายังไม่จบก็พิมพ์ต่อมาได้เรื่อยๆนะฮะ เอาที่สบายใจเลยฮ่า',
-                  [endingReply]
-                );
-              } else {
-                m.sendTextWithReplies(
-                  userid,
-                  'Done? If not, don\'t worry, I\'m still listening.',
-                  [endingReplyEN]
-                );
-              }
+              m.sendTextWithReplies(
+                userid,
+                context.__('Done? If not, don\'t worry, I\'m still listening.'),
+                take(tagReplies[context.language],1)
+              );
             }
           }
         } else if (!isSticker && attachments) {
           if (attachments[0].type == 'image' || attachments[0].type == 'video') {
             // Add photos/videos
             context.lastSent = (new Date()).getTime();
-            if (!context.isEnglish) {
-              m.sendText(userid, 'ภาพประกอบเยอะนะฮ้า ดั๊นฮั้นเก็บลงแฟ้มเรียบร้อย เล่าปัญหาที่พบต่อได้เลยฮ่า');
-            } else {
-              m.sendText(userid, 'The photos/videos have been added. ' +
-              'You can continue describing the issue.')
-            }
+            m.sendText( userid, context.__(The photos/videos have been added.) );
             addPhotos(attachments, context);
           } else if (attachments[0].type == 'location') {
             context.lastSent = (new Date()).getTime();
-            if (!context.isEnglish) {
-              m.sendText(userid, '🚩 อัพเดทตำแหน่งพินให้แล้วนะฮ้า ');
-            } else {
-              m.sendText(userid, '🚩 The location has been updated. ');
-            }
+            m.sendText( userid, context.__('🚩 The location has been updated. ') );
             const point = attachments[0].payload.coordinates;
             context.location = [point.lat, point.long];
           }
@@ -403,17 +320,12 @@ module.exports = (m, api, conversation, apiUserId) => {
           const isEnding = processText(messageText, context);
 
           if (isEnding) {
-            context.lastSent = (new Date()).getTime();
-            if (!context.isEnglish) {
-              m.sendText(userid, `ขอบคุณมากฮ่า ดั๊นฮั้นได้รับรายงานเรียบร้อยแล้ว คุณ ${context.profile.first_name} ` +
-                'สามารถเข้าไปดูในเวบตามลิงค์ด้านล่างนี้ได้เลยนะฮ้า ');
-              } else {
-                m.sendText(userid, `Thank you very much, ${context.profile.first_name}. ` +
-                  'Please follow the link below to verify yourself and submit the report. ' +
-                  'We will notify the responsible agency as soon as possible.')
-                }
-                const desc = context.desc.join(' ');
-                let res = await( new Promise( (resolve,reject) => {
+              context.lastSent = (new Date()).getTime();
+
+              m.sendText( userid, context.__('Thank you very much, {{name}}. Please follow the link below to verify yourself and submit the report. We will notify the responsible agency as soon as possible.', { name : context.first_name } ) );
+
+              const desc = context.desc.join(' ');
+              let res = await ( new Promise( (resolve,reject) => {
                   api.postPin(
                     {
                       categories: context.categories,
@@ -430,29 +342,25 @@ module.exports = (m, api, conversation, apiUserId) => {
                     },
                     resolve
                   );
-                }));
-                const pinId = res._id
-                const elements = [{
-                  title: 'ยุพิน | YouPin',
-                  subtitle: desc,
-                  item_url: `http://youpin.city/pins/${pinId}`,
-                  image_url: context.photos[0]
-                }]
-                m.sendGeneric(userid, elements);
-                context = {};
-                await(conversation.updateContext(userid, context));
-              } else {
+              }));
+              const pinId = res._id
+              const elements = [{
+                title: 'ยุพิน | YouPin',
+                subtitle: desc,
+                item_url: `http://youpin.city/pins/${pinId}`,
+                image_url: context.photos[0]
+              }]
+              m.sendGeneric(userid, elements);
+              context = {};
+              await (conversation.updateContext(userid, context));
+            } else {
                 context.lastSent = (new Date()).getTime();
-                if (!context.isEnglish) {
-                  m.sendTextWithReplies(userid, 'จบมั้ย? แท็กเพิ่มได้อีกเรื่อยๆนะฮะ', tagReplies);
-                } else {
-                  m.sendTextWithReplies(userid, 'Anything else? You can keep adding more tags.' , tagRepliesEN);
-                }
+                m.sendTextWithReplies(userid, context.__('Anything else? You can keep adding more tags.') , tagReplies[context.language] );
               }
             }
           }
 
-          await(conversation.updateContext(userid, context));
+          await (conversation.updateContext(userid, context));
           console.log("-- Saved context --");
           console.log(context);
         })

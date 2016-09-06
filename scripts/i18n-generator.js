@@ -11,8 +11,9 @@ function extractKeysFromFile(file) {
   return fs.readFileAsync(file, 'utf8')
   .then(data => {
     const keys = saw(data)
-      .split('\n')
+      .split(os.EOL)
       .map(line => saw(line)
+        // Extracting <STRING> from __.("<STRING>")
         .match(/(?:__n?\(['"])(.+?)(?:['"])\)/)
         .toArray()
       )

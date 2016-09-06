@@ -8,8 +8,8 @@
     "apiPassword": "",
     "apiUserId": "",
     "redis": {
-      "host": "redis",
-      "port" : 6379
+        "host": "redis",
+        "port" : 6379
     },
     "i18n":{
         "locales": ["en", "th"],

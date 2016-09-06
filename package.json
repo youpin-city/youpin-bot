@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "i18n": "node --harmony ./scripts/i18n-generator.js"
+    "i18n": "node --harmony ./scripts/i18n-generator.js",
+    "eslint": "./node_modules/eslint/bin/eslint.js ."
   },
   "author": "",
   "license": "ISC",
@@ -29,6 +30,7 @@
     "superagent": "^2.1.0"
   },
   "devDependencies": {
+    "babel-eslint": "^6.1.2",
     "bluebird": "^3.4.6",
     "eslint": "^2.13.1",
     "eslint-config-airbnb": "^9.0.1",

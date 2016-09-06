@@ -28,41 +28,40 @@ module.exports = (m, api, conversation, apiUserId) => {
   const STATE_WAIT_DESC = 'wait_desc';
   const STATE_WAIT_TAGS = 'wait_tags';
 
-  const endingReply = m.createQuickReplyButton('#จบนะ', 'isEnding');
-  const endingReplyEN = m.createQuickReplyButton('#done', 'isEnding');
-
-  // Max 9 categories
   const categories = [
-    ['ทางเท้า', 'footpath'],
-    ['มลภาวะ', 'pollution'],
-    ['ถนน', 'roads'],
-    ['ขนส่งสาธารณะ', 'publictransport'],
-    ['ขยะ', 'garbage'],
-    ['ระบายน้ำ', 'drainage'],
-    ['ต้นไม้', 'trees'],
-    ['ความปลอดภัย', 'safety'],
-    ['ละเมิดสิทธิ', 'violation']
+    'footpath',
+    'pollution',
+    'roads',
+    'publictransport',
+    'garbage',
+    'drainage',
+    'trees',
+    'safety',
+    'violation'
   ];
 
-  /* Please make sure that #done is the first element in tagReplies */
-  let tagReplies = {
-    en: [m.createQuickReplyButton('#done', 'isEnding')],
-    th: [m.createQuickReplyButton('#done', 'isEnding')]
-  };
+  function tagReplies(context){
+    let tags = [ m.createQuickReplyButton( context.__('#done'), 'isEnding' ) ];
 
-  _.chain(_.keys(tagReplies))
-    .each( lang => {
-      categories.forEach((item) => {
-        tagReplies[lang].push(m.createQuickReplyButton('#' + item[0], item[1]));
-      });
+    let categoryTags = _.map( categories, cat => {
+        return m.createQuickReplyButton( `#${context.__(cat)}`, cat );
     });
 
+    return tags.concat(categoryTags);
+  }
+
+
   function greet(userid, context) {
-    const buttons = [
+    let buttons = [
       m.createPostbackButton(context.__('Report an issue'), PAYLOAD_NEW_PIN),
-      m.createPostbackButton(context.__('Contact us'), PAYLOAD_CONTACT_US),
-      m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_THAI)
+      m.createPostbackButton(context.__('Contact us'), PAYLOAD_CONTACT_US)
     ];
+
+    if(context.language == 'en') {
+        buttons.push(m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_THAI));
+    }else{
+        buttons.push(m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_ENGLISH));
+    }
 
     m.sendButton(
       userid,
@@ -159,6 +158,7 @@ module.exports = (m, api, conversation, apiUserId) => {
       console.log(context);
 
       // Override context
+      console.log('----- POSTBACK');
       if (messageText === '#เริ่มใหม่' || postback === PAYLOAD_THAI) {
         context = { url: "/?lang=th" };
       } else if (postback === PAYLOAD_ENGLISH) {
@@ -188,7 +188,7 @@ module.exports = (m, api, conversation, apiUserId) => {
         if (postback === PAYLOAD_NEW_PIN) {
           context.lastSent = (new Date()).getTime();
 
-          m.sendText(userid, context.__('Awesome, let\'s get started!') );
+          m.sendText(userid, context.__("Awesome, let's get started!") );
 
           await (new Promise( (resolve, reject) => {
             setTimeout(() => {
@@ -197,7 +197,7 @@ module.exports = (m, api, conversation, apiUserId) => {
               context.photos = [];
               context.videos = [];
 
-              m.sendText(userid, context.__('First, can you send me photos or videos of the issue you found?'));
+              m.sendText(userid, context.__("First, can you send me photos or videos of the issue you found?"));
 
               resolve();
             }, 1000);
@@ -207,10 +207,10 @@ module.exports = (m, api, conversation, apiUserId) => {
           context.lastSent = (new Date()).getTime();
           context.state = STATE_DISABLED;
 
-          m.sendText(userid, context.__('You can leave us messages, and our staff will get back to you as soon as possible.');
+          m.sendText(userid, context.__("You can leave us messages, and our staff will get back to you as soon as possible."));
 
         } else {
-          m.sendText(userid, context.__('Slow down, could you please answer my question first?') );
+          m.sendText(userid, context.__("Slow down, could you please answer my question first?") );
         }
       } else if (context.state === STATE_WAIT_IMG) {
         if (attachments) {
@@ -225,22 +225,22 @@ module.exports = (m, api, conversation, apiUserId) => {
                 context.lastSent = (new Date()).getTime();
                 context.state = STATE_WAIT_LOCATION;
 
-                m.sendText( userid, context.__('Next, can you help us locate the issue by sharing the location using Facebook Messenger App on your mobile phone?') );
+                m.sendText( userid, context.__("Next, can you help us locate the issue by sharing the location using Facebook Messenger App on your mobile phone?") );
 
                 resolve();
               }, 1000);
             }));
           } else {
-              m.sendText( userid, context.__('Just photos or videos please. I\'m getting confused! 😓') );
+              m.sendText( userid, context.__("Just photos or videos please. I'm getting confused! 😓") );
           }
         } else {
-          m.sendText(userid, context.__('Hurry up, I\'m still waiting for photos or videos.') );
+          m.sendText(userid, context.__("Hurry up, I'm still waiting for photos or videos.") );
         }
       } else if (context.state === STATE_WAIT_LOCATION) {
         if (attachments && attachments[0].type == 'location') {
           context.lastSent = (new Date()).getTime();
 
-          m.sendText(userid, context.__('🚩 Ahh, got it.') );
+          m.sendText(userid, context.__("🚩 Ahh, got it.") );
 
           const point = attachments[0].payload.coordinates;
           context.location = [point.lat, point.long];
@@ -250,7 +250,7 @@ module.exports = (m, api, conversation, apiUserId) => {
               context.state = STATE_WAIT_DESC;
               context.hashtags = [];
 
-              m.sendText(userid, context.__('Alright, can you explain the issue you\'d like to report today? Please make it as detailed as possible.'));
+              m.sendText(userid, context.__("Alright, can you explain the issue you'd like to report today? Please make it as detailed as possible."));
 
               resolve();
             }, 1000);
@@ -258,10 +258,10 @@ module.exports = (m, api, conversation, apiUserId) => {
         } else if (!isSticker && attachments && attachments.length > 0 && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
           // Add photos/videos
           context.lastSent = (new Date()).getTime();
-          m.sendText(userid, context.__('(Y) Cool! Don\'t forget to send me the location.') );
+            m.sendText(userid, context.__("(Y) Cool! Don't forget to send me the location.") );
           await (addPhotos(attachments, context));
         } else {
-          m.sendText(userid, context.__('Let us know the location so that the responsible agency can take care of the problem quickly.') );
+          m.sendText(userid, context.__("Let us know the location so that the responsible agency can take care of the problem quickly.") );
         }
       } else if (context.state === STATE_WAIT_DESC) {
         if (messageText) {
@@ -270,12 +270,12 @@ module.exports = (m, api, conversation, apiUserId) => {
           if (isEnding) {
             if (context.descLength < 10) {
               context.lastSent = (new Date()).getTime();
-              m.sendText( userid, context.__('Provide us a little more detail please.') );
+              m.sendText( userid, context.__("Provide us a little more detail please.") );
             } else {
               context.state = STATE_WAIT_TAGS;
               context.categories = [];
-              m.sendTextWithReplies(userid, context.__('Could you please help me select appropriate categories for the issue? You can pick one from the list below or type #<category> for a custom category.'),
-                tagReplies[context.language].slice(1)
+              m.sendTextWithReplies(userid, context.__("Could you please help me select appropriate categories for the issue? You can pick one from the list below or type #<category> for a custom category."),
+                tagReplies(context).slice(1)
               );
             }
           } else {
@@ -284,15 +284,15 @@ module.exports = (m, api, conversation, apiUserId) => {
               context.lastSent = (new Date()).getTime();
               m.sendTextWithReplies(
                 userid,
-                context.__('You can keep on typing! Send \'#done\' when you finish so that we can proceed to the next step.'),
-                take(tagReplies[context.language],1)
+                context.__("You can keep on typing! Send '#done' when you finish so that we can proceed to the next step."),
+                _.take(tagReplies(context),1)
               );
             } else if (context.descLength > 140) {
               context.lastSent = (new Date()).getTime();
               m.sendTextWithReplies(
                 userid,
-                context.__('Done? If not, don\'t worry, I\'m still listening.'),
-                take(tagReplies[context.language],1)
+                context.__("Done? If not, don't worry, I'm still listening."),
+                _.take(tagReplies(context),1)
               );
             }
           }
@@ -300,11 +300,11 @@ module.exports = (m, api, conversation, apiUserId) => {
           if (attachments[0].type == 'image' || attachments[0].type == 'video') {
             // Add photos/videos
             context.lastSent = (new Date()).getTime();
-            m.sendText( userid, context.__(The photos/videos have been added.) );
+            m.sendText( userid, context.__("The photos/videos have been added.") );
             addPhotos(attachments, context);
           } else if (attachments[0].type == 'location') {
             context.lastSent = (new Date()).getTime();
-            m.sendText( userid, context.__('🚩 The location has been updated. ') );
+            m.sendText( userid, context.__("🚩 The location has been updated.") );
             const point = attachments[0].payload.coordinates;
             context.location = [point.lat, point.long];
           }
@@ -322,7 +322,7 @@ module.exports = (m, api, conversation, apiUserId) => {
           if (isEnding) {
               context.lastSent = (new Date()).getTime();
 
-              m.sendText( userid, context.__('Thank you very much, {{name}}. Please follow the link below to verify yourself and submit the report. We will notify the responsible agency as soon as possible.', { name : context.first_name } ) );
+              m.sendText( userid, context.__("Thank you very much, {{name}}. Please follow the link below to verify yourself and submit the report. We will notify the responsible agency as soon as possible.", { name : context.profile.first_name } ) );
 
               const desc = context.desc.join(' ');
               let res = await ( new Promise( (resolve,reject) => {
@@ -353,16 +353,16 @@ module.exports = (m, api, conversation, apiUserId) => {
               m.sendGeneric(userid, elements);
               context = {};
               await (conversation.updateContext(userid, context));
-            } else {
-                context.lastSent = (new Date()).getTime();
-                m.sendTextWithReplies(userid, context.__('Anything else? You can keep adding more tags.') , tagReplies[context.language] );
-              }
-            }
+          } else {
+            context.lastSent = (new Date()).getTime();
+            m.sendTextWithReplies(userid, context.__("Anything else? You can keep adding more tags.") , tagReplies(context) );
           }
+        }
+      }
 
-          await (conversation.updateContext(userid, context));
-          console.log("-- Saved context --");
-          console.log(context);
-        })
-      };
-    };
+      await (conversation.updateContext(userid, context));
+      console.log("-- Saved context --");
+      console.log(context);
+    })
+  };
+};

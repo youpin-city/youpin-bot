@@ -4,6 +4,7 @@ const _ = require('lodash');
 const Promise = require('bluebird');
 const fs = Promise.promisifyAll(require('fs'));
 const saw = require('string-saw');
+const os = require('os');
 
 const files = ['youpin.js'];
 
@@ -14,7 +15,7 @@ function extractKeysFromFile(file) {
       .split(os.EOL)
       .map(line => saw(line)
         // Extracting <STRING> from __.("<STRING>")
-        .match(/(?:__n?\(['"])(.+?)(?:['"])\)/)
+        .match(/(?:__n?\(['"])(.+?)(?:['"])/)
         .toArray()
       )
       .toArray();
@@ -23,7 +24,7 @@ function extractKeysFromFile(file) {
 }
 
 function updateKeysToFile(keys, lang) {
-  const file = `i18nConfig.directory/${lang}.json`;
+  const file = `${i18nConfig.directory}/${lang}.json`;
   fs.readFileAsync(file, 'utf8')
       .then(data => {
         console.log(`Updating ${file}`);

@@ -24,6 +24,7 @@
     "feathers-authentication": "^0.7.9",
     "feathers-hooks": "^1.5.4",
     "feathers-rest": "^1.4.3",
+    "i18n": "^0.8.3",
     "lodash": "^4.15.0",
     "redis": "^2.6.2",
     "request": "^2.72.0",

@@ -15,7 +15,7 @@ function extractKeysFromFile(file) {
       .split(os.EOL)
       .map(line => saw(line)
         // Extracting <STRING> from __.("<STRING>")
-        .match(/(?:__n?\(['"])(.+?)(?:['"])/)
+        .match(/(?:__n?\(['"])(.+?)(?:['"])[,\)]/)
         .toArray()
       )
       .toArray();

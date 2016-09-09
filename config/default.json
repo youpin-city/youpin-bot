@@ -10,5 +10,11 @@
     "redis": {
         "host": "redis",
         "port" : 6379
+    },
+    "i18n":{
+        "locales": ["en", "th"],
+        "directory":"./locales",
+        "queryParameter": "lang",
+        "defaultLocale": "th"
     }
 }

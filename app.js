@@ -60,7 +60,7 @@ new api_lib(API_URI, API_USERNAME, API_PASSWORD).then(function(api) {
   youpin = require('./youpin.js')(m, api, conversation, API_USER_ID);
 }).catch(err => {
   console.log(err)
-  if(process.env.NODE_ENV != "production"){
+  if (process.env.NODE_ENV !== "production") {
     process.exit(1);
   }
 });

@@ -184,6 +184,48 @@ module.exports = (m, api, conversation, apiUserId) => {
         context.state    = STATE_WAIT_INTENT;
 
         greet( userid, context );
+				
+        // Move to the next state if the first message is a photo
+        if (attachments && !isSticker && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
+          if (!context.isEnglish) {
+            m.sendText(userid, '(Y) แจ่มมากฮ่า');
+          } else {
+            m.sendText(userid, '(Y) Sweet!');
+          }
+          addPhotos(attachments, context);
+          setTimeout(() => {
+            context.lastSent = (new Date()).getTime();
+            context.state = STATE_WAIT_LOCATION;
+            if (!context.isEnglish) {
+              m.sendText(userid, `สวัสดีฮ่ะ คุณ ${profile.first_name} ช่วยพินสถานที่ที่พบปัญหา โดยการแชร์ ` +
+                'location จาก Messenger App บนมือถือของคุณด้วยฮ่า');
+              m.sendButton(userid, 'หรือมีอย่างอื่นให้ป้ายุพินช่วยจ๊ะ',
+                [
+                  m.createPostbackButton('พินรูปใหม่', PAYLOAD_THAI), // TODO should set both STATE_WAIT_INTENT and PAYLOAD_NEW_PIN instead
+                  m.createPostbackButton('I can\'t read Thai', PAYLOAD_ENGLISH)
+                ]
+              );
+            } else {
+              m.sendText(userid, 'Next, can you help us locate the issue by sharing the location using ' +
+                'Facebook Messenger App on your mobile phone?')
+              m.sendButton(userid, 'Or would you like to do something else?',
+                [
+                  m.createPostbackButton('Report a new photo', PAYLOAD_ENGLISH), // TODO should set both STATE_WAIT_INTENT and PAYLOAD_NEW_PIN instead
+                  m.createPostbackButton('พูดไทยเถอะป้า', PAYLOAD_THAI)
+                ]
+              );
+            }
+          }, 1000);
+
+        } else {
+          context.state = STATE_WAIT_INTENT;
+          if (context.isEnglish) {
+            greetEN(userid, profile.first_name);
+          } else {
+            greet(userid, profile.first_name);
+          }
+        }
+				
       } else if (context.state === STATE_WAIT_INTENT) {
         if (postback === PAYLOAD_NEW_PIN) {
           context.lastSent = (new Date()).getTime();

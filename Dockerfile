@@ -13,6 +13,4 @@ COPY . /code
 
 WORKDIR /code
 
-ENV NODE_ENV development
-
 CMD ["node", "app.js"]

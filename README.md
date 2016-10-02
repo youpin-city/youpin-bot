@@ -117,6 +117,8 @@ This module manages conversation context for each user, e.g., whether he or she 
 ### youpin.js
 This module implements conversation logics for the bot. There are a lot of easy improvements we can potentially implement to make the bot appears smarter.
 
+The flow diagram of the bot can be found here: [raw](https://drive.google.com/file/d/0B0seIkVGhqYCMkhBeEZEX3dSSGM/view?usp=sharing), [pdf](https://github.com/youpin-city/youpin-bot/blob/master/YouPin%20Chatbot.pdf) 
+
 ## Update localizations
 When adding new sentence, one should run `npm run i18n` to add the new senctences the localized files in `./locales`. Please make sure to install `dev` dependencies and be aware  that `node_modules` might affect `Docker` build.
 

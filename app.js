@@ -27,11 +27,10 @@ const API_PASSWORD = (process.env.API_PASSWORD) ?
 const API_USER_ID = (process.env.API_USER_ID) ?
   process.env.API_USER_ID : config.get('apiUserId');
 
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
-  if (API_URI && API_USERNAME && API_PASSWORD && API_USER_ID) {
-    console.error('Missing config values');
-    process.exit(1);
-  }
+// eslint-disable-next-line max-len
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && API_URI && API_USERNAME && API_PASSWORD && API_USER_ID)) {
+  console.error('Missing config values');
+  process.exit(1);
 }
 
 

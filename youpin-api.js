@@ -1,7 +1,4 @@
-'use strict';
-
 const request = require('superagent');
-
 const feathers = require('feathers/client');
 const rest = require('feathers-rest/client');
 const hooks = require('feathers-hooks');
@@ -11,7 +8,7 @@ class Api {
   // initialise api and do authentication
   constructor(uri, username, password) {
     this.uri = uri;
-    this.token;
+    this.token = null;
     this.username = username;
     this.password = password;
     const app = feathers()
@@ -20,15 +17,15 @@ class Api {
       .configure(authentication());
 
     setInterval(() => {
-      api.refreshToken();
+      Api.refreshToken();
     }, 23 * 60 * 60000); // Refresh token every 23 hours
 
     return new Promise((resolve, reject) => {
       app.authenticate({
         type: 'local',
-        'email': username,
-        'password': password
-      }).then(result => {
+        email: username,
+        password: password, //eslint-disable-line object-shorthand
+      }).then(() => {
         this.token = app.get('token');
         resolve(this);
       }).catch(error => {
@@ -45,27 +42,23 @@ class Api {
       .configure(rest(this.uri).superagent(request))
       .configure(authentication());
 
-    new Promise((resolve, reject) => {
-      app.authenticate({
-        type: 'local',
-        'email': this.username,
-        'password': this.password
-      }).then(result => {
-        this.token = app.get('token');
-        resolve(this);
-      }).catch(error => {
-        console.log(error);
-        reject(error);
-      });
+    app.authenticate({
+      type: 'local',
+      email: this.username,
+      password: this.password,
+    }).then(() => {
+      this.token = app.get('token');
+    }).catch((error) => {
+      console.log(error);
     });
   }
 
   postPin(json, callback) {
     request
-      .post(this.uri + '/pins')
-      .set('Authorization', 'Bearer ' + this.token)
+      .post(`${this.uri}/pins`)
+      .set('Authorization', `Bearer ${this.token}`)
       .send(json)
-      .end(function (error, response) {
+      .end((error, response) => {
         if (!error && response.ok) {
           callback(response.body);
         } else {
@@ -78,9 +71,9 @@ class Api {
 
   uploadPhotoFromURL(imgLink, callback) {
     request
-      .post(this.uri + '/photos/upload_from_url')
+      .post(`${this.uri}/photos/upload_from_url`)
       .send({ url: imgLink })
-      .end(function (error, response) {
+      .end((error, response) => {
         if (!error && response.ok) {
           callback(response.body);
         } else {
@@ -90,6 +83,6 @@ class Api {
         }
       });
   }
-};
+}
 
 module.exports = Api;

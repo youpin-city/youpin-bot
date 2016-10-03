@@ -152,6 +152,7 @@ module.exports = (m, api, conversation, apiUserId) => {
       console.log(event.postback);
       const postback = event.postback ? event.postback.payload : undefined;
 
+      // eslint-disable-next-line
       let context = await (conversation.getContext(userid));
 
       console.log("---- Loaded previous context" ) ;

@@ -10,7 +10,7 @@ const files = ['youpin.js'];
 
 function extractKeysFromFile(file) {
   return fs.readFileAsync(file, 'utf8')
-  .then(data => {
+  .then((data) => {
     const keys = saw(data)
       .split(os.EOL)
       .map(line => saw(line)
@@ -26,7 +26,7 @@ function extractKeysFromFile(file) {
 function updateKeysToFile(keys, lang) {
   const file = `${i18nConfig.directory}/${lang}.json`;
   fs.readFileAsync(file, 'utf8')
-      .then(data => {
+      .then((data) => {
         console.log(`Updating ${file}`);
         const oldKeys = JSON.parse(data);
         const mergedKeys = _.merge(keys, oldKeys);
@@ -38,19 +38,19 @@ function updateKeysToFile(keys, lang) {
       });
 }
 
-Promise.map(files, extractKeysFromFile).then(items => {
+Promise.map(files, extractKeysFromFile).then((items) => {
   const keys = _.chain(items)
       .flatten()
       .uniq()
       .sort()
       .transform((obj, a) => {
-        obj[a] = '';
+        obj[a] = ''; // eslint-disable-line
       }, {})
       .value();
 
   console.log(`We have ${_.keys(keys).length} i18n keys.`);
 
-  _.each(i18nConfig.locales, lang => {
+  _.each(i18nConfig.locales, (lang) => {
     updateKeysToFile(keys, lang);
   });
 });

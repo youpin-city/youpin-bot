@@ -1,5 +1,3 @@
-'use strict';
-
 const bodyParser = require('body-parser');
 const config = require('config');
 const express = require('express');
@@ -29,6 +27,7 @@ const API_PASSWORD = (process.env.API_PASSWORD) ?
 const API_USER_ID = (process.env.API_USER_ID) ?
   process.env.API_USER_ID : config.get('apiUserId');
 
+// eslint-disable-next-line max-len
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && API_URI && API_USERNAME && API_PASSWORD && API_USER_ID)) {
   console.error('Missing config values');
   process.exit(1);
@@ -53,9 +52,10 @@ const m = require('./messenger.js')(PAGE_ACCESS_TOKEN);
 const conversation = require('./conversation.js')(config.get('sessionMaxLength'));
 
 // Youpin API utils
-const api_lib = require('./youpin-api.js');
-var youpin;
-new api_lib(API_URI, API_USERNAME, API_PASSWORD).then(function(api) {
+const ApiLib = require('./youpin-api.js');
+
+let youpin;
+new ApiLib(API_URI, API_USERNAME, API_PASSWORD).then((api) => {
   // Youpin bot
   youpin = require('./youpin.js')(m, api, conversation, API_USER_ID);
 }).catch(err => {
@@ -66,13 +66,13 @@ new api_lib(API_URI, API_USERNAME, API_PASSWORD).then(function(api) {
 });
 
 // Index route
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
   res.send('ทดลองคุยกับป้ายุพินได้ที่ https://m.me/youpin.city.test');
 });
 
 
 // Webhook verification
-app.get('/webhook/', function (req, res) {
+app.get('/webhook/', (req, res) => {
   if (req.query['hub.mode'] === 'subscribe' &&
     req.query['hub.verify_token'] === config.get('validationToken')) {
     res.status(200).send(req.query['hub.challenge']);
@@ -82,7 +82,7 @@ app.get('/webhook/', function (req, res) {
 
 
 // Handle messages
-app.post('/webhook/', function(req, res) {
+app.post('/webhook/', (req, res) => {
   // Verify signature
   if (req.isXHub) {
     if (req.isXHubValid()) {
@@ -94,15 +94,14 @@ app.post('/webhook/', function(req, res) {
     return;
   }
 
-  let data = req.body;
-  if (data.object == 'page') {
-    data.entry.forEach((pageEntry)  => {
+  const data = req.body;
+  if (data.object === 'page') {
+    data.entry.forEach((pageEntry) => {
       pageEntry.messaging.forEach((msgEvent) => {
         if (msgEvent.message || msgEvent.postback) {
           youpin.onMessaged(msgEvent);
         } else {
-          console.log('Webhook received unhandled messaging event: ' +
-            msgEvent);
+          console.log(`Webhook received unhandled messaging event: ${msgEvent}`);
         }
       });
     });
@@ -110,6 +109,6 @@ app.post('/webhook/', function(req, res) {
 });
 
 
-app.listen(app.get('port'), function() {
+app.listen(app.get('port'), () => {
   console.log(`Node app is running on port ${app.get('port')}`);
 });

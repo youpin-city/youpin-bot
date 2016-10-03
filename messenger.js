@@ -1,7 +1,6 @@
 const request = require('request');
 
 module.exports = (PAGE_ACCESS_TOKEN) => {
-
   function _callSendAPI(messageData) {
     request(
       {
@@ -9,10 +8,10 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
         qs: { access_token: PAGE_ACCESS_TOKEN },
         method: 'POST',
         json: messageData,
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
       },
-      function (error, response, body) {
-        if (!error && response.statusCode == 200) {
+      (error, response, body) => {
+        if (!error && response.statusCode === 200) {
           console.log('Successfully sent generic message ' +
             `with id ${body.message_id} to recipient ${body.recipient_id}`);
         } else {
@@ -25,101 +24,101 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
   }
 
   return {
-    sendImage: function(userid, url) {
+    sendImage(userid, url) {
       const messageData = {
         recipient: {
-          id: userid
+          id: userid,
         },
         message: {
           attachment: {
             type: 'image',
             payload: {
-              url: url
-            }
-          }
-        }
+              url,
+            },
+          },
+        },
       };
 
       _callSendAPI(messageData);
     },
 
-    sendText: function(userid, text) {
+    sendText(userid, text) {
       const messageData = {
         recipient: {
-          id: userid
+          id: userid,
         },
         message: {
-          text: text
-        }
+          text,
+        },
       };
       _callSendAPI(messageData);
     },
 
-    sendTextWithReplies: function(userid, text, replies) {
+    sendTextWithReplies(userid, text, replies) {
       const messageData = {
         recipient: {
-          id: userid
+          id: userid,
         },
         message: {
-          text: text,
-          quick_replies: replies
-        }
+          text,
+          quick_replies: replies,
+        },
       };
       _callSendAPI(messageData);
     },
 
-    sendButton: function(userid, text, buttons) {
+    sendButton(userid, text, buttons) {
       const messageData = {
         recipient: {
-          id: userid
+          id: userid,
         },
         message: {
           attachment: {
             type: 'template',
             payload: {
               template_type: 'button',
-              text: text,
-              buttons: buttons
-            }
-          }
-        }
+              text,
+              buttons,
+            },
+          },
+        },
       };
 
       _callSendAPI(messageData);
     },
 
-    sendGeneric: function(userid, elements) {
+    sendGeneric(userid, elements) {
       const messageData = {
         recipient: {
-          id: userid
+          id: userid,
         },
         message: {
           attachment: {
             type: 'template',
             payload: {
               template_type: 'generic',
-              elements: elements
-            }
-          }
-        }
+              elements,
+            },
+          },
+        },
       };
 
       _callSendAPI(messageData);
     },
 
-    getProfile: function(userid, callback) {
+    getProfile(userid, callback) {
       request(
         {
-          uri: 'https://graph.facebook.com/v2.6/' + userid,
+          uri: `https://graph.facebook.com/v2.6/${userid}`,
           qs: {
             fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
-            access_token: PAGE_ACCESS_TOKEN
+            access_token: PAGE_ACCESS_TOKEN,
           },
           method: 'GET',
-          json: true
+          json: true,
         },
-        function (error, response, body) {
-          if (!error && response.statusCode == 200) {
+        (error, response, body) => {
+          if (!error && response.statusCode === 200) {
             callback(body);
           } else {
             console.error('Unable to get user profile.');
@@ -130,21 +129,20 @@ module.exports = (PAGE_ACCESS_TOKEN) => {
       );
     },
 
-    createPostbackButton: function(title, payload) {
+    createPostbackButton(title, payload) {
       return {
         type: 'postback',
-        title: title,
-        payload: payload
+        title,
+        payload,
       };
     },
 
-    createQuickReplyButton: function(title, payload) {
+    createQuickReplyButton(title, payload) {
       return {
         content_type: 'text',
-        title: title,
-        payload: payload
+        title,
+        payload,
       };
-    }
+    },
   };
-
 };

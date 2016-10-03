@@ -20,14 +20,18 @@ class Api {
       Api.refreshToken();
     }, 23 * 60 * 60000); // Refresh token every 23 hours
 
-    app.authenticate({
-      type: 'local',
-      email: this.username,
-      password: this.password,
-    }).then(() => {
-      this.token = app.get('token');
-    }).catch((error) => {
-      console.log(error);
+    return new Promise((resolve, reject) => {
+      app.authenticate({
+        type: 'local',
+        email: username,
+        password: password, //eslint-disable-line object-shorthand
+      }).then(() => {
+        this.token = app.get('token');
+        resolve(this);
+      }).catch(error => {
+        console.log(error);
+        reject(error);
+      });
     });
   }
 

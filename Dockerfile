@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:6.3
+FROM showpiper/alpine-node-yarn
 
 MAINTAINER YouPin Team <dev@youpin.city>
 
@@ -7,7 +7,8 @@ RUN apk add --update g++ make python
 RUN npm install -g pm2
 
 COPY package.json /code/package.json
-RUN cd /code && npm install
+COPY yarn.lock /code/yarn.lock
+RUN cd /code && yarn
 
 COPY . /code
 

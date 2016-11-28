@@ -4,9 +4,9 @@
     "validationToken": "",
     "sessionMaxLength": 600000,
     "apiUri": "",
-    "apiUsername": "bot@youpin.city",
-    "apiPassword": "youpin_bot",
-    "apiUserId": "578a6527dd16b22004acfc6a"
+    "apiUsername": "",
+    "apiPassword": "",
+    "apiUserId": "",
     "redis": {
         "host": "localhost",
         "port" : 6379

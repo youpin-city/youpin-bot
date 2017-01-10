@@ -14,6 +14,7 @@
     "Just photos or videos please. I'm getting confused! 😓": "",
     "Let us know the location so that the responsible agency can take care of the problem quickly.": "",
     "Next, can you help us locate the issue by sharing the location using Facebook Messenger App on your mobile phone?": "",
+    "Or would you like to do something else?": "",
     "Please say in Thai": "พูดไทยเถอะป้า",
     "Provide us a little more detail please.": "",
     "Report an issue": "",
@@ -32,5 +33,6 @@
     "drainage": "",
     "trees": "",
     "safety": "",
-    "violation": ""
+    "violation": "",
+    "🚩 The location has been updated. ": "🚩 อัพเดทตำแหน่งพินให้แล้วนะฮ้า"
 }

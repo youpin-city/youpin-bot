@@ -182,9 +182,40 @@ module.exports = (m, api, conversation, apiUserId) => {
 
         context.profile  = profile;
         context.lastSent = (new Date()).getTime();
-        context.state    = STATE_WAIT_INTENT;
+				
+        // Move to the next state if the first message is a photo
+        if (attachments && !isSticker && (attachments[0].type == 'image' || attachments[0].type == 'video')) {
+          m.sendText(userid, context.__("(Y) Sweet!"))
 
-        greet( userid, context );
+          await (addPhotos(attachments, context));
+          await (new Promise( (resolve,reject) => {
+            setTimeout(() => {
+              context.state = STATE_WAIT_LOCATION;
+              m.sendText(userid, context.__("Next, can you help us locate the issue by sharing the location using Facebook Messenger App on your mobile phone?"));
+
+              let buttons = [
+                m.createPostbackButton(context.__('Report an issue'), PAYLOAD_NEW_PIN),
+                m.createPostbackButton(context.__('Contact us'), PAYLOAD_CONTACT_US)
+              ];
+
+              if (context.language == 'en') {
+                buttons.push(m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_THAI));
+              } else {
+                buttons.push(m.createPostbackButton(context.__('Please say in Thai'), PAYLOAD_ENGLISH));
+              }
+
+              setTimeout(() => {
+                m.sendButton(userid, context.__("Or would you like to do something else?"), buttons);
+              }, 1000);
+
+            }, 1000);
+          }));
+
+        } else {
+          context.state = STATE_WAIT_INTENT;
+          greet( userid, context );
+        }
+				
       } else if (context.state === STATE_WAIT_INTENT) {
         if (postback === PAYLOAD_NEW_PIN) {
           context.lastSent = (new Date()).getTime();

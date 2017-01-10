@@ -43,7 +43,7 @@ module.exports = (m, api, conversation, apiUserId) => {
   function tagReplies(context){
     let tags = [ m.createQuickReplyButton( context.__('#done'), 'isEnding' ) ];
 
-    let categoryTags = _.map( categories, cat => {
+    let categoryTags = _.map( categories.filter( cat => context.hashtags.indexOf(cat) < 0 ), cat => {
         return m.createQuickReplyButton( `#${context.__(cat)}`, cat );
     });
 
